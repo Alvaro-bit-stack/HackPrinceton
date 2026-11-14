@@ -3,9 +3,11 @@
 Run from the repo root:  uvicorn backend.main:app --reload --port 8000
 """
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 
@@ -56,6 +58,12 @@ class RecognizeIn(BaseModel):
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+@app.get("/dev", include_in_schema=False)
+def dev_page():
+    # local test bench: speak + face in, raw signer output shown; same origin, so no CORS change
+    return FileResponse(Path(__file__).parent / "dev.html")
 
 
 @app.get("/vocab")

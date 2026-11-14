@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backend test bench</title>
+<style>
+  body { font: 15px system-ui, sans-serif; max-width: 1000px; margin: 24px auto; padding: 0 16px; color: #222; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  video { width: 320px; border-radius: 8px; background: #000; transform: scaleX(-1); }
+  button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid #888; background: #fff; cursor: pointer; }
+  button.on { background: #c62828; color: #fff; border-color: #c62828; }
+  input, select { font: inherit; padding: 6px; }
+  .bar { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .bar span:first-child { width: 72px; }
+  .bar div { height: 10px; background: #1976d2; border-radius: 3px; }
+  .chip { display: inline-block; padding: 6px 10px; margin: 3px; border-radius: 6px; background: #e3f2fd; font-weight: 600; }
+  .chip.fs { background: #fff3e0; }
+  .chip.new { outline: 2px solid #2e7d32; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; }
+  .muted { color: #666; font-size: 13px; }
+  .warn { color: #c62828; font-weight: 600; }
+  dt { font-weight: 600; } dd { margin: 0 0 8px 0; }
+</style>
+</head>
+<body>
+<h1>Backend test bench</h1>
+<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video never leaves this page; only the averaged face scores are sent.</p>
+
+<div class="row">
+  <div>
+    <video id="video" autoplay muted playsinline></video>
+    <div><button id="cam">Camera on</button> <span id="camStatus" class="muted"></span></div>
+  </div>
+  <div style="flex:1; min-width: 260px">
+    <div id="bars" class="muted">Face scores appear here when the camera is on.</div>
+  </div>
+</div>
+
+<h2>Input</h2>
+<div class="row">
+  <button id="talk">🎤 Hold to talk</button>
+  <input id="text" placeholder="…or type a sentence and press Enter" style="flex:1; min-width: 260px" maxlength="300">
+</div>
+<p class="row">
+  <label>Emotion override <select id="emotion"><option value="">(let backend decide)</option>
+    <option>neutral</option><option>happy</option><option>sad</option><option>angry</option><option>surprised</option><option>worried</option></select></label>
+  <label>Speaker id <input id="speaker" placeholder="e.g. mom" size="10"></label>
+  <label><input type="checkbox" id="sendFace" checked> send face scores</label>
+</p>
+<p id="heard" class="muted"></p>
+
+<h2>What the signer gets</h2>
+<div id="result" class="muted">Nothing yet.</div>
+
+<details><summary>Raw request and response</summary>
+  <h3>Request</h3><pre id="req"></pre>
+  <h3>Response</h3><pre id="res"></pre>
+</details>
+
+<script type="module">
+// face-api.js from a CDN, so this page needs no build step; same library the frontend uses
+import * as faceapi from "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.esm.js";
+const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---- camera + face scores ----
+let stream = null, loop = null, samples = [], sampling = false, latest = null;
+$("cam").onclick = async () => {
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; clearInterval(loop); $("cam").textContent = "Camera on"; $("camStatus").textContent = ""; latest = null; return; }
+  try {
+    $("camStatus").textContent = "loading face models…";
+    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODELS), faceapi.nets.faceExpressionNet.loadFromUri(MODELS)]);
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    $("video").srcObject = stream;
+    $("cam").textContent = "Camera off";
+    $("camStatus").textContent = "";
+    loop = setInterval(async () => {
+      const r = await faceapi.detectSingleFace($("video"), new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+      latest = r ? { ...r.expressions } : null;
+      if (latest && sampling) samples.push(latest);
+      drawBars(latest);
+    }, 200);
+  } catch (e) { $("camStatus").innerHTML = `<span class="warn">${esc(e.message || e)}</span>`; }
+};
+function drawBars(s) {
+  if (!s) { $("bars").textContent = "No face seen."; return; }
+  $("bars").innerHTML = Object.entries(s).map(([k, v]) =>
+    `<div class="bar"><span>${k}</span><div style="width:${Math.round(v * 200)}px"></div><span>${v.toFixed(2)}</span></div>`).join("");
+}
+function averageSamples() {
+  if (!samples.length) return null;
+  const out = {};
+  for (const s of samples) for (const [k, v] of Object.entries(s)) out[k] = (out[k] || 0) + v / samples.length;
+  for (const k in out) out[k] = Math.round(out[k] * 1000) / 1000;
+  return out;
+}
+
+// ---- speech ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, finalText = "";
+if (!SR) { $("talk").disabled = true; $("talk").title = "Speech recognition not supported in this browser; type instead"; }
+function startTalk() {
+  if (!SR || rec) return;
+  finalText = ""; samples = []; sampling = true;
+  rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+    }
+    $("heard").textContent = "Heard: " + finalText + interim;
+  };
+  rec.onerror = (e) => { $("heard").innerHTML = `<span class="warn">Speech error: ${esc(e.error)}</span>`; };
+  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); if (finalText.trim()) send(finalText.trim(), averageSamples()); };
+  rec.start(); $("talk").classList.add("on");
+}
+const stopTalk = () => rec && rec.stop();
+$("talk").addEventListener("pointerdown", startTalk);
+$("talk").addEventListener("pointerup", stopTalk);
+$("talk").addEventListener("pointerleave", stopTalk);
+$("text").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest); // typed: use the face right now
+});
+
+// ---- backend ----
+async function send(text, face) {
+  const body = { text };
+  if ($("emotion").value) body.emotion = $("emotion").value;
+  if ($("speaker").value.trim()) body.speaker = $("speaker").value.trim();
+  if (face && $("sendFace").checked) body.face_emotions = face;
+  $("req").textContent = JSON.stringify(body, null, 2);
+  $("result").textContent = "Translating… (the backend translates, then double-checks)";
+  const t0 = performance.now();
+  try {
+    const r = await fetch("/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json();
+    const ms = Math.round(performance.now() - t0);
+    $("res").textContent = JSON.stringify(data, null, 2);
+    if (!r.ok) { $("result").innerHTML = `<span class="warn">HTTP ${r.status}: ${esc(JSON.stringify(data.detail))}</span>`; return; }
+    show(data, ms, face);
+  } catch (e) { $("result").innerHTML = `<span class="warn">Backend not reachable: ${esc(e.message)}</span>`; }
+}
+function show(d, ms, face) {
+  const isNew = new Set(d.new_signs || []);
+  const chips = d.signs.map((s) => `<span class="chip ${s.known ? "" : "fs"} ${isNew.has(s.gloss) ? "new" : ""}" title="${s.known ? "has a sign" : "fingerspell"}">${esc(s.gloss)}${s.known ? "" : " (FS)"}</span>`).join("");
+  $("result").innerHTML = `
+    <div>${chips}</div>
+    <p class="muted">blue = sign, orange = fingerspelled, green outline = new sign for this family</p>
+    <dl>
+      <dt>Meaning (what the backend understood)</dt><dd>${esc(d.meaning)}</dd>
+      <dt>Grammar face (eyebrows)</dt><dd>${esc(d.face)}</dd>
+      <dt>Emotion (rest of face, movement)</dt><dd>${esc(d.emotion)}</dd>
+      <dt>Source</dt><dd>${esc(d.source)} ${d.unsure ? '<span class="warn">— unsure, don\'t trust it</span>' : "— passed its self-check"}</dd>
+      <dt>Face scores sent</dt><dd>${face && $("sendFace").checked ? esc(JSON.stringify(face)) : "none"}</dd>
+      <dt>Time</dt><dd>${ms} ms</dd>
+    </dl>`;
+}
+</script>
+</body>
+</html>
