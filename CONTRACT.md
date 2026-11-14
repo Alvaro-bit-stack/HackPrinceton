@@ -19,15 +19,16 @@ Used by both the Speak page and the Storybook page.
 
 Request:
 ```json
-{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}, "speaker": "mom", "loudness": 0.4}
+{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}, "speaker": "mom", "loudness": 0.4, "pitch": 0.3}
 ```
 | Field | Required | Rules |
 |---|---|---|
 | `text` | yes | 1 to 300 characters. |
 | `emotion` | no | One of `neutral`, `happy`, `sad`, `angry`, `surprised`, `worried`. Only send it when you know it for sure, for example after the parent picked it. It always wins. |
-| `face_emotions` | no | The parent's face while speaking, from face-api.js, averaged over the sentence. Keys must be among `neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`; values 0 to 1. Leave it out when the camera is off or no face was seen. |
+| `face_emotions` | no | The parent's face while speaking, from the face model (MediaPipe blendshapes turned into seven scores, see `backend/dev.html`), averaged over the sentence. Keys must be among `neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`; values 0 to 1. Leave it out when the camera is off or no face was seen. |
 | `speaker` | no | The family member talking: a member `id` from `/family`, such as `mom` (lowercase letters, digits and `-`, up to 30 characters). Used to keep a per-parent progress count. |
 | `loudness` | no | How loud the parent spoke compared with their own normal voice: -1 (much quieter) to 1 (much louder), 0 normal. The frontend measures it from the mic level; never send audio. It sets how strong the feeling is, not which feeling. |
+| `pitch` | no | The parent's voice pitch compared with their own normal: -1 (much lower) to 1 (much higher), 0 normal. The frontend measures it from the mic with a pitch detector (about 6 semitones higher = 1). Like `loudness`, it mainly sets intensity; raised pitch also hints at a more agitated or excited feeling. |
 
 Response:
 ```json
@@ -49,7 +50,7 @@ Response:
 - `emotion` is the feeling, one of the six above. It sets the rest of the face.
 - `intensity` (0 to 1) is how strong the feeling is: 0.2 calm, 0.5 clear, 0.8 or more very strong. It sets how big and sharp the signing and the face are. A firm warning is `angry` at low intensity; real anger is `angry` at high intensity.
 - `tone_reason` is one short line on which signals decided the emotion and intensity. Show it in testing tools; parents don't need it.
-- How the three tone signals combine: the words decide which emotion when they carry intent (a warning, praise, "be careful"); the face decides when the words are ambiguous ("you ate all of it"); a face that disagrees with clear words, such as smiling while warning, doesn't change the emotion but can soften the intensity; loudness raises or lowers the intensity. An explicit `emotion` always wins.
+- How the three tone signals combine: the words decide which emotion when they carry intent (a warning, praise, "be careful"); the face decides when the words are ambiguous ("you ate all of it"); a face that disagrees with clear words, such as smiling while warning, doesn't change the emotion but can soften the intensity; loudness and pitch raise or lower the intensity. An explicit `emotion` always wins.
 - `face` and `emotion` are separate on purpose. In ASL the eyebrows mark a question whatever the mood, so an angry question needs both.
 - `meaning` is one line on what the backend understood the parent to mean. Show it so the parent can correct it.
 - `source` says where the translation came from:

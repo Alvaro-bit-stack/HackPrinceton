@@ -23,7 +23,7 @@ Every sentence, spoken or from a book, goes through these steps in `translate.py
 1. **Validate.**
    - Text: 1 to 300 characters.
    - `emotion`: one of the six, if sent.
-   - `face_emotions`: only the seven face-api.js labels, each with a value from 0 to 1.
+   - `face_emotions`: only the seven emotion labels (`neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`), each with a value from 0 to 1.
    - Bad input returns HTTP 422.
 2. **Apply a saved correction.** If the parent corrected this exact sentence before, their emotion and meaning are used.
 3. **Phrase bank.** If a fluent signer has checked this sentence, use those signs. No model call is made.
@@ -100,7 +100,7 @@ There are three levels, from fastest to most realistic.
      -d '{"text": "you ate all of it", "emotion": "surprised"}'
    curl -s localhost:8000/books/pips-morning
    ```
-3. **Speak and use your face:** with the server running, open http://localhost:8000/dev in Chrome or Edge. Turn the camera on, hold the talk button and say a sentence (or type one). Your first spoken sentence sets your normal voice level; after that, louder sentences send a positive `loudness`. The page shows the live face scores, the loudness and the request it sent. It also shows what the 3D signer gets back: the signs (fingerspelled and new ones marked), the grammar face, the emotion, the intensity, why it chose that tone, the meaning line, the source, whether it's unsure, and how long it took. Use it to check the reasoning: does the meaning match what you meant, and did your face change the emotion when the words were neutral? Video stays in the browser; the face models load from a CDN, so it needs internet.
+3. **Speak and use your face:** with the server running, open http://localhost:8000/dev in Chrome or Edge. Turn the camera on, hold the talk button and say a sentence (or type one). Press "Record my neutral face" once with a relaxed face. Your first spoken sentence sets your normal voice level and pitch; after that, louder or higher sentences send a positive `loudness` or `pitch`. The page shows the live emotion scores, the facial movements behind them (brows, eyes, mouth), the loudness and pitch, and the request it sent. It also shows what the 3D signer gets back: the signs (fingerspelled and new ones marked), the grammar face, the emotion, the intensity, why it chose that tone, the meaning line, the source, whether it's unsure, and how long it took. Use it to check the reasoning: does the meaning match what you meant, and did your face change the emotion when the words were neutral? Video and audio stay in the browser; the face model (MediaPipe) and pitch detector (pitchy) load from a CDN, so it needs internet.
 4. **Measure accuracy:** `python -m backend.evaluate` runs the 24 parent sentences in `backend/eval_sentences.json` through the real model. For each sentence it checks the question type, the emotion and the key signs, and records how long it took. The summary includes the hour-16 pivot number: how many sentences came out fully signed in under 3 seconds. It also writes a review sheet for a fluent signer to `backend/data/` (git-ignored).
    - `--offline` runs without the model, giving the word-for-word baseline to beat: 18/24 question types, 6/7 emotions, 25/28 key signs, 0 fully signed.
    - Add sentences to `eval_sentences.json` as you find ones the app gets wrong.

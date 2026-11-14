@@ -25,15 +25,16 @@
 </head>
 <body>
 <h1>Backend test bench</h1>
-<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video never leaves this page; only the averaged face scores are sent.</p>
+<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video and audio never leave this page; only averaged face scores, loudness and pitch numbers are sent. For best results, press "Record my neutral face" once with a relaxed face.</p>
 
 <div class="row">
   <div>
     <video id="video" autoplay muted playsinline></video>
-    <div><button id="cam">Camera on</button> <span id="camStatus" class="muted"></span></div>
+    <div><button id="cam">Camera on</button> <button id="calib" disabled title="Look at the camera with a relaxed face for 2 seconds">Record my neutral face</button> <span id="camStatus" class="muted"></span></div>
   </div>
   <div style="flex:1; min-width: 260px">
     <div id="bars" class="muted">Face scores appear here when the camera is on.</div>
+    <div id="cues" class="muted" style="margin-top:10px"></div>
   </div>
 </div>
 
@@ -47,7 +48,7 @@
     <option>neutral</option><option>happy</option><option>sad</option><option>angry</option><option>surprised</option><option>worried</option></select></label>
   <label>Speaker id <input id="speaker" placeholder="e.g. mom" size="10"></label>
   <label><input type="checkbox" id="sendFace" checked> send face scores</label>
-  <label><input type="checkbox" id="sendVoice" checked> send loudness</label>
+  <label><input type="checkbox" id="sendVoice" checked> send loudness and pitch</label>
   <button id="resetVoice" title="Your next sentence becomes your normal speaking level">Reset my normal voice</button>
 </p>
 <p id="heard" class="muted"></p>
@@ -62,35 +63,100 @@
 </details>
 
 <script type="module">
-// face-api.js from a CDN, so this page needs no build step; same library the frontend uses
-import * as faceapi from "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.esm.js";
-const MODELS = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+// Libraries from a CDN, so this page needs no build step.
+// MediaPipe Face Landmarker measures 52 facial movements (brows, eyes, mouth); we turn them into emotion scores with
+// simple rules, relative to the parent's own neutral face. Same CDN build and model as Google's web example.
+import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+import { PitchDetector } from "https://esm.sh/pitchy@4";
+const { FaceLandmarker, FilesetResolver } = vision;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // ---- camera + face scores ----
-let stream = null, loop = null, samples = [], sampling = false, latest = null;
+let stream = null, loop = null, samples = [], sampling = false, latest = null, landmarker = null;
+let neutral = {}, calibrating = null; // per-movement baseline from "Record my neutral face"
+const GAIN = 2.2; // blendshape changes are small (0.1-0.5); scale before the rules
+const avg = (b, ...names) => names.reduce((a, n) => a + (b[n] || 0), 0) / names.length;
+function cuesOf(raw) {
+  const d = {};
+  for (const [k, v] of Object.entries(raw)) d[k] = Math.min(1, Math.max(0, (v - (neutral[k] || 0)) * GAIN));
+  return {
+    browDown: avg(d, "browDownLeft", "browDownRight"),
+    browInnerUp: d.browInnerUp || 0,
+    browOuterUp: avg(d, "browOuterUpLeft", "browOuterUpRight"),
+    eyeSquint: avg(d, "eyeSquintLeft", "eyeSquintRight"),
+    eyeWide: avg(d, "eyeWideLeft", "eyeWideRight"),
+    noseSneer: avg(d, "noseSneerLeft", "noseSneerRight"),
+    mouthPress: avg(d, "mouthPressLeft", "mouthPressRight"),
+    mouthFrown: avg(d, "mouthFrownLeft", "mouthFrownRight"),
+    mouthStretch: avg(d, "mouthStretchLeft", "mouthStretchRight"),
+    upperLipUp: avg(d, "mouthUpperUpLeft", "mouthUpperUpRight"),
+    smile: avg(d, "mouthSmileLeft", "mouthSmileRight"),
+    cheekSquint: avg(d, "cheekSquintLeft", "cheekSquintRight"),
+    jawOpen: d.jawOpen || 0,
+  };
+}
+// Brows carry most of the signal for the hard emotions: down = anger, inner-up alone = sadness, all up = surprise/fear.
+function emotionsOf(c) {
+  const clamp = (x) => Math.min(1, Math.max(0, x));
+  const e = {
+    angry: clamp(0.45 * c.browDown + 0.2 * c.eyeSquint + 0.15 * c.mouthPress + 0.1 * c.noseSneer + 0.1 * c.mouthFrown - 0.3 * c.smile),
+    sad: clamp(0.45 * Math.max(0, c.browInnerUp - 0.6 * c.browOuterUp) + 0.4 * c.mouthFrown + 0.15 * c.mouthPress - 0.3 * c.smile),
+    surprised: clamp(0.35 * c.browOuterUp + 0.15 * c.browInnerUp + 0.25 * c.eyeWide + 0.25 * c.jawOpen - 0.3 * c.browDown),
+    fearful: clamp(0.3 * c.browInnerUp + 0.15 * c.browOuterUp + 0.3 * c.eyeWide + 0.25 * c.mouthStretch - 0.3 * c.browDown),
+    disgusted: clamp(0.45 * c.noseSneer + 0.3 * c.upperLipUp + 0.25 * c.browDown - 0.3 * c.smile),
+    happy: clamp(0.65 * c.smile + 0.35 * c.cheekSquint),
+  };
+  e.neutral = clamp(1 - 1.4 * Math.max(...Object.values(e)));
+  const total = Object.values(e).reduce((a, b) => a + b, 0) || 1; // same shape as before: 7 scores summing to 1
+  for (const k in e) e[k] = Math.round(e[k] / total * 1000) / 1000;
+  return e;
+}
 $("cam").onclick = async () => {
-  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; clearInterval(loop); $("cam").textContent = "Camera on"; $("camStatus").textContent = ""; latest = null; return; }
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; clearInterval(loop); $("cam").textContent = "Camera on"; $("calib").disabled = true; $("camStatus").textContent = ""; latest = null; return; }
   try {
-    $("camStatus").textContent = "loading face models…";
-    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(MODELS), faceapi.nets.faceExpressionNet.loadFromUri(MODELS)]);
+    $("camStatus").textContent = "loading face model…";
+    if (!landmarker) {
+      const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+      landmarker = await FaceLandmarker.createFromOptions(files, {
+        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
+        outputFaceBlendshapes: true, runningMode: "VIDEO", numFaces: 1 });
+    }
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
     $("video").srcObject = stream;
-    $("cam").textContent = "Camera off";
-    $("camStatus").textContent = "";
-    loop = setInterval(async () => {
-      const r = await faceapi.detectSingleFace($("video"), new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-      latest = r ? { ...r.expressions } : null;
-      if (latest && sampling) samples.push(latest);
-      drawBars(latest);
-    }, 200);
+    await new Promise((r) => ($("video").onloadeddata = r));
+    $("cam").textContent = "Camera off"; $("calib").disabled = false;
+    $("camStatus").textContent = Object.keys(neutral).length ? "" : "Tip: press \"Record my neutral face\" first.";
+    loop = setInterval(() => {
+      const res = landmarker.detectForVideo($("video"), performance.now());
+      const shapes = res.faceBlendshapes && res.faceBlendshapes[0];
+      if (!shapes) { latest = null; drawBars(null); return; }
+      const raw = Object.fromEntries(shapes.categories.map((c) => [c.categoryName, c.score]));
+      if (calibrating) calibrating.push(raw);
+      const cues = cuesOf(raw);
+      latest = emotionsOf(cues);
+      if (sampling) samples.push(latest);
+      drawBars(latest, cues);
+    }, 100);
   } catch (e) { $("camStatus").innerHTML = `<span class="warn">${esc(e.message || e)}</span>`; }
 };
-function drawBars(s) {
-  if (!s) { $("bars").textContent = "No face seen."; return; }
-  $("bars").innerHTML = Object.entries(s).map(([k, v]) =>
-    `<div class="bar"><span>${k}</span><div style="width:${Math.round(v * 200)}px"></div><span>${v.toFixed(2)}</span></div>`).join("");
+$("calib").onclick = () => {
+  const got = calibrating = []; $("camStatus").textContent = "Hold a relaxed, neutral face…";
+  setTimeout(() => {
+    if (calibrating !== got) return; // a newer press restarted calibration
+    calibrating = null;
+    if (!got.length) { $("camStatus").innerHTML = '<span class="warn">No face seen; try again.</span>'; return; }
+    neutral = {};
+    for (const r of got) for (const [k, v] of Object.entries(r)) neutral[k] = (neutral[k] || 0) + v / got.length;
+    $("camStatus").textContent = "Neutral face recorded.";
+  }, 2000);
+};
+const bar = (k, v, color = "#1976d2") => `<div class="bar"><span>${k}</span><div style="width:${Math.round(v * 200)}px;background:${color}"></div><span>${v.toFixed(2)}</span></div>`;
+function drawBars(s, cues) {
+  if (!s) { $("bars").textContent = "No face seen."; $("cues").textContent = ""; return; }
+  $("bars").innerHTML = "<b>Emotion scores sent</b>" + Object.entries(s).map(([k, v]) => bar(k, v)).join("");
+  $("cues").innerHTML = "<b>Movements measured</b>" + ["browDown", "browInnerUp", "browOuterUp", "eyeSquint", "eyeWide", "mouthPress", "mouthFrown", "noseSneer", "smile", "jawOpen"]
+    .map((k) => bar(k, cues[k], "#7b1fa2")).join("");
 }
 function averageSamples() {
   if (!samples.length) return null;
@@ -101,16 +167,16 @@ function averageSamples() {
 }
 
 // ---- voice loudness (relative to this speaker's normal; mics differ, so absolute volume means nothing) ----
-let audio = null, levels = [], baselineDb = null, lastLoudness = null;
+let audio = null, levels = [], pitches = [], baselineDb = null, baselinePitch = null, lastLoudness = null;
 async function startLevels() {
-  levels = [];
+  levels = []; pitches = [];
   try {
     if (!audio) {
       const ctx = new AudioContext();
       const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
       const analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
       ctx.createMediaStreamSource(mic).connect(analyser);
-      audio = { ctx, analyser, buf: new Float32Array(analyser.fftSize), timer: null };
+      audio = { ctx, analyser, buf: new Float32Array(analyser.fftSize), timer: null, detector: PitchDetector.forFloat32Array(analyser.fftSize) };
     }
     await audio.ctx.resume();
     if (!sampling || audio.timer) return; // released before the mic was ready: don't start an interval nobody stops
@@ -118,20 +184,33 @@ async function startLevels() {
       audio.analyser.getFloatTimeDomainData(audio.buf);
       let sum = 0; for (const x of audio.buf) sum += x * x;
       const db = 10 * Math.log10(sum / audio.buf.length + 1e-12);
-      if (db > -55) levels.push(db); // ponytail: fixed noise gate; a noisy room counts as speech. Calibrate per room if it misfires.
+      if (db > -55) { // ponytail: fixed noise gate; a noisy room counts as speech. Calibrate per room if it misfires.
+        levels.push(db);
+        const [hz, clarity] = audio.detector.findPitch(audio.buf, audio.ctx.sampleRate);
+        if (clarity > 0.9 && hz > 70 && hz < 500) pitches.push(hz); // voiced frames only, in human speaking range
+      }
     }, 100);
   } catch (e) { $("voice").innerHTML = `<span class="warn">Mic level not available: ${esc(e.message || e)}</span>`; }
 }
 function stopLevels() {
   if (audio && audio.timer) { clearInterval(audio.timer); audio.timer = null; }
-  if (levels.length < 3) { lastLoudness = null; $("voice").textContent = "Loudness: not enough speech heard."; return null; }
+  if (levels.length < 3) { lastLoudness = null; $("voice").textContent = "Loudness: not enough speech heard."; return { loudness: null, pitch: null }; }
   const db = levels.reduce((a, b) => a + b, 0) / levels.length;
   if (baselineDb === null) baselineDb = db;
   lastLoudness = Math.max(-1, Math.min(1, Math.round((db - baselineDb) / 12 * 100) / 100)); // ~12 dB louder = "much louder"
-  $("voice").textContent = `Loudness: ${db.toFixed(1)} dB, your normal ${baselineDb.toFixed(1)} dB → ${lastLoudness >= 0 ? "+" : ""}${lastLoudness.toFixed(2)}`;
-  return lastLoudness;
+  let pitch = null, pitchText = "pitch: not enough voiced speech";
+  if (pitches.length >= 3) {
+    const hz = pitches.slice().sort((a, b) => a - b)[Math.floor(pitches.length / 2)]; // median resists octave errors
+    if (baselinePitch === null) baselinePitch = hz;
+    const semis = 12 * Math.log2(hz / baselinePitch);
+    pitch = Math.max(-1, Math.min(1, Math.round(semis / 6 * 100) / 100)); // ~6 semitones higher = "much higher"
+    pitchText = `pitch ${hz.toFixed(0)} Hz, your normal ${baselinePitch.toFixed(0)} Hz → ${pitch >= 0 ? "+" : ""}${pitch.toFixed(2)}`;
+  }
+  const sign = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
+  $("voice").textContent = `Loudness ${db.toFixed(1)} dB, your normal ${baselineDb.toFixed(1)} dB → ${sign(lastLoudness)} · ${pitchText}`;
+  return { loudness: lastLoudness, pitch };
 }
-$("resetVoice").onclick = () => { baselineDb = null; $("voice").textContent = "Loudness: your next spoken sentence sets your normal level."; };
+$("resetVoice").onclick = () => { baselineDb = null; baselinePitch = null; $("voice").textContent = "Loudness: your next spoken sentence sets your normal level."; };
 
 // ---- speech ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -149,7 +228,7 @@ function startTalk() {
     $("heard").textContent = "Heard: " + finalText + interim;
   };
   rec.onerror = (e) => { $("heard").innerHTML = `<span class="warn">Speech error: ${esc(e.error)}</span>`; };
-  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const loud = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), loud); };
+  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const voice = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), voice); };
   rec.start(); $("talk").classList.add("on");
 }
 const stopTalk = () => rec && rec.stop();
@@ -157,16 +236,19 @@ $("talk").addEventListener("pointerdown", startTalk);
 $("talk").addEventListener("pointerup", stopTalk);
 $("talk").addEventListener("pointerleave", stopTalk);
 $("text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, null); // typed: use the face right now, no voice
+  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, {}); // typed: use the face right now, no voice
 });
 
 // ---- backend ----
-async function send(text, face, loudness) {
+async function send(text, face, voice) {
   const body = { text };
   if ($("emotion").value) body.emotion = $("emotion").value;
   if ($("speaker").value.trim()) body.speaker = $("speaker").value.trim();
   if (face && $("sendFace").checked) body.face_emotions = face;
-  if (loudness !== null && loudness !== undefined && $("sendVoice").checked) body.loudness = loudness;
+  if ($("sendVoice").checked) {
+    if (voice.loudness != null) body.loudness = voice.loudness;
+    if (voice.pitch != null) body.pitch = voice.pitch;
+  }
   $("req").textContent = JSON.stringify(body, null, 2);
   $("result").textContent = "Translating… (the backend translates, then double-checks)";
   const t0 = performance.now();
@@ -194,6 +276,7 @@ function show(d, ms, sent) {
       <dt>Source</dt><dd>${esc(d.source)} ${d.unsure ? '<span class="warn">— unsure, don\'t trust it</span>' : "— passed its self-check"}</dd>
       <dt>Face scores sent</dt><dd>${sent.face_emotions ? esc(JSON.stringify(sent.face_emotions)) : "none"}</dd>
       <dt>Loudness sent</dt><dd>${sent.loudness ?? "none"}</dd>
+      <dt>Pitch sent</dt><dd>${sent.pitch ?? "none"}</dd>
       <dt>Time</dt><dd>${ms} ms</dd>
     </dl>`;
 }

@@ -31,6 +31,7 @@ class TranslateIn(BaseModel):
     emotion: Optional[Emotion] = None
     face_emotions: Optional[dict[str, float]] = None
     loudness: Optional[float] = Field(None, ge=-1, le=1)  # parent's voice vs their own normal; sets intensity only
+    pitch: Optional[float] = Field(None, ge=-1, le=1)  # same idea for voice pitch
     speaker: Optional[str] = Field(None, pattern=r"^[a-z0-9-]{1,30}$")  # a family member id
 
 
@@ -75,7 +76,7 @@ def vocab():
 @app.post("/translate")
 def translate_route(body: TranslateIn):
     try:
-        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections(), loudness=body.loudness)
+        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections(), loudness=body.loudness, pitch=body.pitch)
         known = [s["gloss"] for s in result["signs"] if s["known"]]
         result["new_signs"] = new_signs(known)
         try:

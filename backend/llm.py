@@ -95,7 +95,7 @@ Reply with one JSON object and nothing else:
 
 
 def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_hint=None,
-                     examples=(), corrections=(), previous=None, loudness=None):
+                     examples=(), corrections=(), previous=None, loudness=None, pitch=None):
     parts = ["Allowed glosses (gloss: English words):\n" + "\n".join(f"{v['gloss']}: {', '.join(v['english'])}" for v in vocab)]
     if face_emotions:
         parts.append(f"The parent's face emotion scores (0 to 1): {json.dumps(face_emotions)}. "
@@ -105,6 +105,10 @@ def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_
     if loudness is not None:
         parts.append(f"The parent's voice loudness relative to their normal: {loudness:+.2f} (-1 much quieter, 0 normal, +1 much louder). "
                      "Loudness tells how strong the feeling is, not which feeling.")
+    if pitch is not None:
+        parts.append(f"The parent's voice pitch relative to their normal: {pitch:+.2f} (-1 much lower, 0 normal, +1 much higher). "
+                     "Raised pitch suggests a stronger, more agitated or excited feeling; lower, flat pitch suggests calm or sadness. "
+                     "Like loudness, it mainly sets intensity; the words and face decide which feeling.")
     if emotion:
         parts.append(f'The emotion is "{emotion}". Use it as is in the "emotion" field.')
     if meaning_hint:

@@ -65,7 +65,7 @@ class _OutOfTime(Exception):
     pass
 
 
-def validate(text, emotion, face_emotions, meaning_hint, loudness=None):
+def validate(text, emotion, face_emotions, meaning_hint, loudness=None, pitch=None):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("text must be a non-empty string")
     if len(text) > MAX_TEXT:
@@ -84,6 +84,8 @@ def validate(text, emotion, face_emotions, meaning_hint, loudness=None):
         raise ValueError(f"meaning_hint must be a string of at most {MAX_MEANING} characters")
     if loudness is not None and (isinstance(loudness, bool) or not isinstance(loudness, (int, float)) or not -1 <= loudness <= 1):
         raise ValueError("loudness must be a number from -1 to 1")
+    if pitch is not None and (isinstance(pitch, bool) or not isinstance(pitch, (int, float)) or not -1 <= pitch <= 1):
+        raise ValueError("pitch must be a number from -1 to 1")
 
 
 def face_emotion(face_emotions):
@@ -97,17 +99,18 @@ def face_emotion(face_emotions):
     return None if top == "neutral" else (top, totals[top])
 
 
-def _intensity(emotion, loudness, face):
-    """Rule-based strength 0..1: louder voice and an agreeing strong face raise it."""
-    x = (0.2 if emotion == "neutral" else 0.5) + 0.3 * (loudness or 0)
+def _intensity(emotion, loudness, face, pitch=None):
+    """Rule-based strength 0..1: louder or higher voice and an agreeing strong face raise it."""
+    x = (0.2 if emotion == "neutral" else 0.5) + 0.3 * (loudness or 0) + 0.2 * (pitch or 0)
     if face and face[1] >= FACE_OVERRIDE and face[0] == emotion:
         x += 0.15
     return round(min(1.0, max(0.0, x)), 2)
 
 
-def _reason(decided, loudness):
-    voice = "voice louder than usual" if (loudness or 0) >= 0.3 else "voice quieter than usual" if (loudness or 0) <= -0.3 else ""
-    return f"emotion from {decided}" + (f"; {voice}" if voice else "")
+def _reason(decided, loudness, pitch=None):
+    voice = ["voice louder than usual" if (loudness or 0) >= 0.3 else "voice quieter than usual" if (loudness or 0) <= -0.3 else "",
+             "pitch higher than usual" if (pitch or 0) >= 0.3 else "pitch lower than usual" if (pitch or 0) <= -0.3 else ""]
+    return "; ".join([f"emotion from {decided}"] + [v for v in voice if v])
 
 
 def validate_model_output(out):
@@ -146,12 +149,12 @@ def _nearest(text, phrases, n=4):
 
 
 def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phrases=None, model=None,
-              corrections=None, budget_seconds=45, offline=False, loudness=None):
+              corrections=None, budget_seconds=45, offline=False, loudness=None, pitch=None):
     """Returns {"signs": [{gloss, known}], "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}.
 
     offline=True never calls the model (phrase bank, then fallback); used when serving books.
     """
-    validate(text, emotion, face_emotions, meaning_hint, loudness)
+    validate(text, emotion, face_emotions, meaning_hint, loudness, pitch)
     phrases = PHRASES if phrases is None else phrases
     model = llm if model is None else model
     key = _key(text)
@@ -166,9 +169,9 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
     def result(signs, face_kind, emo, meaning, source, unsure, decided="the model", tone=None):
         intensity, reason = tone or (None, None)
         if intensity is None:
-            intensity = _intensity(emo, loudness, face)
+            intensity = _intensity(emo, loudness, face, pitch)
         return {"signs": _signs_out(signs), "face": face_kind, "emotion": emo, "intensity": intensity,
-                "tone_reason": reason or _reason(decided, loudness), "meaning": meaning, "source": source, "unsure": unsure}
+                "tone_reason": reason or _reason(decided, loudness, pitch), "meaning": meaning, "source": source, "unsure": unsure}
 
     def decided_by(*named):  # what chose the emotion: the first set value, in the same order as the `or` chain
         return next((n for v, n in named if v), "neutral default")
@@ -204,7 +207,7 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         for _ in range(2):  # one retry, telling the model what was wrong
             out = call(model.translate, sentence=text, face_emotions=face_emotions, emotion=emotion,
                        meaning_hint=meaning_hint, vocab=VOCAB, examples=_nearest(text, phrases),
-                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness)
+                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness, pitch=pitch)
             problems = validate_model_output(out)
             if not problems:
                 return dict(out)  # copy, since the emotion may be overwritten below

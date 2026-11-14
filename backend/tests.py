@@ -176,6 +176,17 @@ def test_loudness_validation():
     for bad in (True, 1.5, -2, "loud"):
         assert "loudness" in raises(T.translate, "hi", loudness=bad, phrases={}, model=FakeModel())
     assert T.translate("hi", loudness=-1, phrases={}, offline=True)["intensity"] == 0
+    for bad in (True, 1.5, "high"):
+        assert "pitch" in raises(T.translate, "hi", pitch=bad, phrases={}, model=FakeModel())
+
+
+def test_pitch():
+    low, high = (T.translate("stop it", pitch=v, phrases={}, offline=True) for v in (-0.6, 0.8))
+    assert high["intensity"] > low["intensity"] and "pitch higher" in high["tone_reason"] and "pitch lower" in low["tone_reason"]
+    m = FakeModel([GOOD], [OK])
+    T.translate("x", pitch=0.5, phrases={}, model=m)
+    assert m.t_calls[0]["pitch"] == 0.5
+    assert "pitch relative to their normal: +0.50" in llm.translate_prompt("x", T.VOCAB, pitch=0.5)[1]
 
 
 def test_tone_fields():

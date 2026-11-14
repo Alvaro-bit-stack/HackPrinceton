@@ -66,7 +66,10 @@ Ease into each new face over about 150 ms rather than snapping. Keep it for the 
 ## Part 2: the face camera (`frontend/src/lib/faceEmotion.js`)
 **Why:** the backend weighs the parent's face alongside their words to decide the emotion and what they mean. "You ate all of it" with a smile is praise; with raised brows it's surprise.
 
-**Library:** `@vladmandic/face-api`, the maintained fork of face-api.js. Load its face detector and expression model.
+**Library: MediaPipe Face Landmarker** (`@mediapipe/tasks-vision`), not face-api.js. face-api's expression model was trained on a dataset dominated by happy and neutral faces, so in testing it caught happy and neutral well but missed angry and sad. MediaPipe instead measures 52 facial movements (brows down, inner brow up, lip press, nose wrinkle…), and simple rules turn those into the seven scores, relative to the parent's own neutral face. **Copy `cuesOf`, `emotionsOf` and the calibration code from `backend/dev.html`**, which is tested and working.
+- Add a "record my neutral face" step (2 seconds of a relaxed face). Without it, someone whose resting face looks stern reads as angry.
+- The brows carry most of the signal: brows down means angry, inner brows up alone means sad, all brows up means surprised or afraid.
+- Bonus: the movement names match the avatar's shape keys (`browDownLeft`, `mouthFrownLeft`…), so later the parent's face could drive the avatar's face directly.
 
 **What to build:** two functions the frontend calls around speech recognition.
 
@@ -85,7 +88,7 @@ export function stopFaceEmotion() {}
 - **Values:** numbers from 0 to 1.
 - **Privacy:** process everything in the browser. Never send video or images to the backend; only the seven numbers leave the device.
 - **No face, no scores:** return `null` when no face was found in at least half the frames. The frontend then sends nothing.
-- **Known limit:** glasses lower the model's accuracy. The backend lets the words outrank the face, so a bad reading does limited harm.
+- **Known limit:** glasses, strong side lighting and turning away lower accuracy. The backend lets the words outrank the face, so a bad reading does limited harm.
 
 **How the backend uses the scores:**
 - **On the model path:** the language model sees them and weighs them against the words.
