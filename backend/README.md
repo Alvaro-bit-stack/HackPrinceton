@@ -75,6 +75,19 @@ python -m backend.asl_lex import "path/to/Data Files/signdata.csv"
 ```
 Credit: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://asl-lex.org, CC BY-NC 4.0. Non-commercial use only. The sign videos in the archive are not used.
 
+## Family profile and progress (catch-up, not cap)
+Children who miss early language can't afford a "simpler" version. So the child's age never makes a translation simpler; the prompt tells the model to sign the full meaning with the richest signs it has. The age is only used to show the parent which everyday signs they haven't used yet.
+
+- `backend/family.py`: the family profile (child's name and age, members with an avatar id), at `backend/data/family.json`. Routes `GET` and `PUT /family`.
+- `backend/progress.py`: logs the known signs from every `/translate` (with the optional `speaker`) to `backend/data/usage.json`, works out `new_signs`, and builds `GET /progress`: signs used, this week's variety vs last week's, and a catch-up list of ASL-LEX child-vocabulary signs learned by the child's age that the family hasn't used, split into signs the app can show and signs still to animate.
+- Both files live in `backend/data/`, which is git-ignored. Delete them to reset.
+
+```
+curl -s -X PUT localhost:8000/family -H "Content-Type: application/json" \
+  -d '{"child_name": "Maya", "child_age_months": 30, "members": [{"id": "mom", "name": "Mom", "avatar": null}]}'
+curl -s "localhost:8000/progress?speaker=mom"
+```
+
 ## Testing without the frontend
 There are three levels, from fastest to most realistic.
 

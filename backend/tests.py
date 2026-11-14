@@ -6,7 +6,9 @@ import tempfile
 from pathlib import Path
 from unittest import mock
 
-from backend import books, corrections, llm
+from datetime import datetime, timedelta, timezone
+
+from backend import books, corrections, family, llm, progress as P
 from backend import translate as T
 from backend.llm import LLMUnavailable
 
@@ -375,6 +377,102 @@ def test_asl_lex():
     if A.LEX.exists():
         entries = {e["entry"] for e in json.loads(A.LEX.read_text(encoding="utf-8"))["signs"]}
         assert all(v["asl_lex"] in entries for v in T.VOCAB), [v["gloss"] for v in T.VOCAB if v["asl_lex"] not in entries]
+
+
+def test_family_profile():
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d, "family.json")
+        assert family.load_family(p) == {"child_name": None, "child_age_months": None, "members": []}
+        p.write_text("{oops")
+        assert family.load_family(p)["members"] == []  # corrupt file -> default
+        saved = family.save_family({"child_name": " Mia ", "child_age_months": 20,
+                                    "members": [{"id": "mom", "name": " Mom ", "avatar": None}]}, p)
+        assert saved["child_name"] == "Mia" and saved["members"][0]["name"] == "Mom" and family.load_family(p) == saved
+        assert family.save_family({"child_name": "  "}, p)["child_name"] is None
+        m = {"id": "a", "name": "A", "avatar": None}
+        bad = [{"child_name": "x" * 61}, {"child_age_months": True}, {"child_age_months": 217}, {"child_age_months": 1.5},
+               {"members": [dict(m, id=str(i)) for i in range(9)]}, {"members": [dict(m, id="Bad Id")]},
+               {"members": [m, m]}, {"members": [dict(m, name=" ")]}, {"members": [dict(m, name="x" * 41)]},
+               {"members": [dict(m, avatar="x" * 41)]}, {"members": [dict(m, avatar=3)]}]
+        for b in bad:
+            try:
+                family.save_family(b, p)
+            except ValueError:
+                continue
+            raise AssertionError(f"accepted {b}")
+        assert family.save_family({"child_age_months": 0}, p)["child_age_months"] == 0
+        assert family.save_family({"members": [dict(m, avatar=" ")]}, p)["members"][0]["avatar"] is None
+
+
+def test_usage_and_new_signs():
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d, "usage.json")
+        assert P.new_signs(["MILK", "MILK", "EAT"], p) == ["MILK", "EAT"]
+        P.log_usage([], path=p)
+        assert not p.exists()  # empty logs nothing
+        P.log_usage(["MILK"], "mom", path=p)
+        assert P.new_signs(["EAT", "MILK", "EAT", "HELP"], p) == ["EAT", "HELP"]
+
+
+LEX = {"milk": {"entry": "milk", "english": ["milk"], "frequency": 6, "iconicity": 2, "child_vocab": True, "age_learned_months": 18},
+       "eat": {"entry": "eat_1", "english": ["eat"], "frequency": 7, "iconicity": 5, "child_vocab": True, "age_learned_months": 12},
+       "ball": {"entry": "ball", "english": ["ball"], "frequency": 5, "iconicity": None, "child_vocab": True, "age_learned_months": 12},
+       "cat": {"entry": "cat", "english": ["cat"], "frequency": 5, "iconicity": 4, "child_vocab": True, "age_learned_months": 12},
+       "dog": {"entry": "dog", "english": ["dog"], "frequency": 5, "iconicity": 1, "child_vocab": True, "age_learned_months": 30},
+       "the": {"entry": "the", "english": ["the"], "frequency": 5, "iconicity": 1, "child_vocab": False, "age_learned_months": 10},
+       "noage": {"entry": "noage", "english": ["noage"], "frequency": 5, "iconicity": 1, "child_vocab": True, "age_learned_months": None}}
+VOC = [{"gloss": "MILK", "english": ["milk"], "asl_lex": "milk"}, {"gloss": "EAT", "english": ["eat"], "asl_lex": "eat_1"},
+       {"gloss": "CAT", "english": ["cat"], "asl_lex": "cat"}]
+
+
+def test_progress():
+    now = datetime(2026, 1, 20, tzinfo=timezone.utc)
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d, "usage.json")
+        P.log_usage(["MILK", "EAT"], "mom", now - timedelta(days=10), p)
+        P.log_usage(["EAT"], "dad", now - timedelta(days=2), p)
+        P.log_usage(["MILK", "HELP"], "mom", now - timedelta(days=1), p)
+        r = P.progress(None, None, now, p, LEX, VOC)
+        assert r["signs_used"] == ["MILK", "EAT", "HELP"] and r["variety"] == {"this_week": 3, "last_week": 2}
+        assert P.progress(None, "dad", now, p, LEX, VOC)["signs_used"] == ["EAT"]
+        # no age: every child_vocab entry with an age, minus what the family used (milk, eat_1); cat in_app, ball not yet
+        r = P.progress(None, None, now, p, LEX, VOC)["catch_up"]
+        assert [x["entry"] for x in r["in_app"]] == ["cat"] and r["in_app"][0]["gloss"] == "CAT"
+        assert [x["entry"] for x in r["not_yet_animated"]] == ["ball", "dog"]
+        # dad has not used milk; age 18 drops dog; age 12 entries sort by frequency then iconicity (None last)
+        r = P.progress(18, "dad", now, p, LEX, VOC)["catch_up"]
+        assert [x["entry"] for x in r["in_app"]] == ["cat", "milk"] and [x["entry"] for x in r["not_yet_animated"]] == ["ball"]
+        assert set(r["in_app"][0]) == {"gloss", "entry", "english", "age_learned_months"}
+        # real ASL-LEX file: "water" is shadowed in the word index (swing lists it) but must still be suggested
+        r = P.progress(30, None, now, Path(d, "none.json"), vocab=[{"gloss": "WATER", "english": ["water"], "asl_lex": "water"}])
+        assert [x["gloss"] for x in r["catch_up"]["in_app"]] == ["WATER"], r["catch_up"]["in_app"]
+        # hand-edited log: a naive time and a non-text sign must not crash
+        Path(d, "bad.json").write_text('[{"t": "2026-01-19T00:00:00", "signs": ["MILK", {"x": 1}]}]')
+        assert P.new_signs(["MILK", "EAT"], Path(d, "bad.json")) == ["EAT"]
+        assert P.progress(None, None, now, Path(d, "bad.json"), LEX, VOC)["variety"]["this_week"] == 0
+
+
+def test_routes():
+    try:
+        from fastapi.testclient import TestClient
+    except ImportError:
+        print("skip test_routes: httpx not installed")
+        return
+    from backend import main
+    with tempfile.TemporaryDirectory() as d, mock.patch.object(family, "PATH", Path(d, "f.json")), \
+            mock.patch.object(P, "USAGE_PATH", Path(d, "u.json")), \
+            mock.patch.object(main, "save_family", lambda b: family.save_family(b, Path(d, "f.json"))), \
+            mock.patch.object(main, "load_family", lambda: family.load_family(Path(d, "f.json"))), \
+            mock.patch.object(main, "log_usage", lambda g, s=None: P.log_usage(g, s, path=Path(d, "u.json"))), \
+            mock.patch.object(main, "new_signs", lambda g: P.new_signs(g, Path(d, "u.json"))):
+        c = TestClient(main.app)
+        assert c.put("/family", json={"child_age_months": 999}).status_code == 422
+        assert c.put("/family", json={"child_name": "Mia", "child_age_months": 20}).status_code == 200
+        assert c.get("/family").json()["child_name"] == "Mia"
+        with mock.patch.object(main, "translate", lambda *a, **k: {"signs": [{"gloss": "MILK", "known": True}, {"gloss": "X", "known": False}]}):
+            assert c.post("/translate", json={"text": "milk", "speaker": "Bad Id"}).status_code == 422
+            assert c.post("/translate", json={"text": "milk", "speaker": "mom"}).json()["new_signs"] == ["MILK"]
+            assert c.post("/translate", json={"text": "milk"}).json()["new_signs"] == []
 
 
 def run():
