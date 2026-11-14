@@ -109,7 +109,7 @@ def test_model_happy_path_and_fs():
     r = T.translate("You love Pip's AB-1", phrases={}, model=m)
     assert r["source"] == "model" and r["unsure"] is False and r["emotion"] == "happy"
     assert r["signs"][1] == {"gloss": "PIP'S", "known": False} and r["signs"][0] == {"gloss": "YOU", "known": True}
-    assert set(r) == {"signs", "face", "emotion", "meaning", "source", "unsure"}
+    assert set(r) == {"signs", "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}
     assert m.t_calls[0]["timeout"] <= 45 and m.c_calls[0]["text"] == "You love Pip's AB-1"
 
 
@@ -169,7 +169,85 @@ def test_explicit_emotion_forced():
     m = FakeModel([dict(GOOD, emotion="happy")], [OK])
     r = T.translate("Do you want more milk?", "angry", {"happy": 0.9}, phrases={}, model=m)
     assert r["emotion"] == "angry" and m.t_calls[0]["emotion"] == "angry"
-    assert T.translate("x", phrases={}, model=FakeModel([GOOD], [OK]), face_emotions={"sad": 0.9})["emotion"] == "neutral"  # model decides
+    # a strong face beats a neutral model answer (GOOD says neutral)
+    assert T.translate("x", phrases={}, model=FakeModel([GOOD], [OK]), face_emotions={"sad": 0.9})["emotion"] == "sad"
+
+
+def test_loudness_validation():
+    for bad in (True, 1.5, -2, "loud"):
+        assert "loudness" in raises(T.translate, "hi", loudness=bad, phrases={}, model=FakeModel())
+    assert T.translate("hi", loudness=-1, phrases={}, offline=True)["intensity"] == 0
+    for bad in (True, 1.5, "high"):
+        assert "pitch" in raises(T.translate, "hi", pitch=bad, phrases={}, model=FakeModel())
+
+
+def test_face_frames():
+    import base64
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"x" * 200).decode()
+    png = base64.b64encode(b"\x89PNG" + b"x" * 200).decode()
+    for bad in ([], [jpg] * 4, "notalist", [png], ["!!!"], [jpg[:64] + "!!!!"], [jpg + "A" * T.MAX_FRAME_CHARS]):
+        assert "face" in raises(T.translate, "hi", face_frames=bad, phrases={}, model=FakeModel())
+    assert "face_neutral" in raises(T.translate, "hi", face_frames=[jpg], face_neutral=png, phrases={}, model=FakeModel())
+    m = FakeModel([GOOD], [OK])
+    T.translate("put your shoes on", face_frames=[jpg, jpg], face_neutral=jpg, phrases={}, model=m)
+    assert m.t_calls[0]["face_frames"] == [jpg, jpg] and m.t_calls[0]["face_neutral"] == jpg
+    assert "face_frames" not in m.c_calls[0]  # the self-check never sees the photos
+    user = llm.translate_prompt("x", T.VOCAB, face_frames=[jpg, jpg], face_neutral=jpg)[1]
+    assert "Image 1 is their relaxed, neutral face" in user and "Images 2 to 3" in user
+    assert "Images 1 to 1" in llm.translate_prompt("x", T.VOCAB, face_frames=[jpg])[1]
+    oa = llm._user_content("openai", "hi", [jpg, jpg])
+    assert oa[0] == {"type": "text", "text": "hi"} and oa[1]["image_url"]["url"].startswith("data:image/jpeg;base64,") and len(oa) == 3
+    an = llm._user_content("anthropic", "hi", [jpg])
+    assert an[0]["source"]["media_type"] == "image/jpeg" and an[-1]["text"] == "hi"
+    assert llm._user_content("openai", "hi", []) == "hi"
+    with mock.patch.object(llm, "call_json") as cj:  # neutral photo alone is not sent
+        llm.translate(5, sentence="x", vocab=T.VOCAB, face_neutral=jpg)
+        assert cj.call_args.kwargs["images"] == []
+        llm.translate(5, sentence="x", vocab=T.VOCAB, face_frames=[jpg], face_neutral=jpg)
+        assert cj.call_args.kwargs["images"] == [jpg, jpg]
+
+
+def test_strong_face_beats_neutral_model():
+    m = FakeModel([dict(GOOD, emotion="neutral", tone_reason="words are plain")], [OK])
+    r = T.translate("you ate all of it", face_emotions={"angry": 0.67, "disgusted": 0.25}, phrases={}, model=m)
+    assert r["emotion"] == "angry" and "face clearly showed angry" in r["tone_reason"] and "words are plain" in r["tone_reason"]
+    m = FakeModel([dict(GOOD, emotion="neutral", intensity=0.3)], [OK])
+    r = T.translate("x", face_emotions={"angry": 0.67, "disgusted": 0.25}, loudness=0.99, phrases={}, model=m)
+    assert r["emotion"] == "angry" and r["intensity"] > 0.8  # loud + strong face, not the model's neutral 0.3
+    m = FakeModel([dict(GOOD, emotion="neutral")], [OK])  # weak face: the model's neutral stands
+    assert T.translate("x", face_emotions={"angry": 0.4, "neutral": 0.6}, phrases={}, model=m)["emotion"] == "neutral"
+    m = FakeModel([dict(GOOD, emotion="neutral")], [OK])  # the parent's explicit pick always wins
+    assert T.translate("x", "neutral", face_emotions={"angry": 0.9}, phrases={}, model=m)["emotion"] == "neutral"
+    m = FakeModel([dict(GOOD, emotion="happy")], [OK])  # a non-neutral model answer is kept (words can outrank the face)
+    assert T.translate("x", face_emotions={"angry": 0.9}, phrases={}, model=m)["emotion"] == "happy"
+
+
+def test_pitch():
+    low, high = (T.translate("stop it", pitch=v, phrases={}, offline=True) for v in (-0.6, 0.8))
+    assert high["intensity"] > low["intensity"] and "pitch higher" in high["tone_reason"] and "pitch lower" in low["tone_reason"]
+    m = FakeModel([GOOD], [OK])
+    T.translate("x", pitch=0.5, phrases={}, model=m)
+    assert m.t_calls[0]["pitch"] == 0.5
+    assert "pitch relative to their normal: +0.50" in llm.translate_prompt("x", T.VOCAB, pitch=0.5)[1]
+
+
+def test_tone_fields():
+    m = FakeModel([dict(GOOD, emotion="angry", intensity=0.35, tone_reason="a warning")], [OK])
+    r = T.translate("Hit again and time out.", face_emotions={"happy": 0.7}, loudness=0.2, phrases={}, model=m)
+    assert (r["emotion"], r["intensity"], r["tone_reason"]) == ("angry", 0.35, "a warning") and m.t_calls[0]["loudness"] == 0.2
+    m = FakeModel([GOOD], [OK])  # no tone fields: accepted without a retry, rule-based values
+    r = T.translate("x", loudness=0.9, phrases={}, model=m)
+    assert len(m.t_calls) == 1 and 0 <= r["intensity"] <= 1 and r["tone_reason"] and "louder" in r["tone_reason"]
+    m = FakeModel([dict(GOOD, intensity=7, tone_reason="r" * 201)], [OK])
+    r = T.translate("x", phrases={}, model=m)
+    assert len(m.t_calls) == 1 and r["intensity"] == 0.2 and r["tone_reason"]
+    m = FakeModel([dict(GOOD, emotion="happy", intensity=0.4)], [OK])
+    assert T.translate("x", "sad", phrases={}, model=m)["intensity"] == 0.4  # explicit emotion keeps the model's intensity
+    quiet, loud = (T.translate("stop it", loudness=v, phrases={}, offline=True) for v in (-0.5, 0.8))
+    assert loud["intensity"] > quiet["intensity"] and "quieter" in quiet["tone_reason"] and loud["source"] == "fallback"
+    bank = {"hi": {"english": "hi", "signs": ["YES"], "emotion": "happy"}}
+    a, b = (T.translate("hi", loudness=v, phrases=bank) for v in (0, 1))
+    assert b["intensity"] > a["intensity"] and "phrase bank" in a["tone_reason"]
 
 
 def test_correction_overrides():
@@ -307,7 +385,8 @@ def test_llm_no_key_unavailable():
 
 def test_prompts():
     s, u = llm.translate_prompt("Hi", T.VOCAB, {"happy": 0.5}, "sad", "greeting", [{"english": "a", "signs": ["YES"]}], [{"text": "t"}], {"signs": ["NO"], "problem": "bad"})
-    assert "MILK: milk" in s + u and "FS:WORD" in s and "fluent signer" in s and "outrank" in u and "greeting" in u and "bad" in u and "Sentence: Hi" in u
+    assert "MILK: milk" in s + u and "FS:WORD" in s and "fluent signer" in s and "words decide" in u and "greeting" in u and "bad" in u and "Sentence: Hi" in u
+    assert "loudness" not in u and "+0.70" in llm.translate_prompt("Hi", T.VOCAB, loudness=0.7)[1]
 
 
 def test_review_fixes():

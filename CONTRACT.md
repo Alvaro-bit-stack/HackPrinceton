@@ -19,14 +19,18 @@ Used by both the Speak page and the Storybook page.
 
 Request:
 ```json
-{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}, "speaker": "mom"}
+{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}, "speaker": "mom", "loudness": 0.4, "pitch": 0.3}
 ```
 | Field | Required | Rules |
 |---|---|---|
 | `text` | yes | 1 to 300 characters. |
 | `emotion` | no | One of `neutral`, `happy`, `sad`, `angry`, `surprised`, `worried`. Only send it when you know it for sure, for example after the parent picked it. It always wins. |
-| `face_emotions` | no | The parent's face while speaking, from face-api.js, averaged over the sentence. Keys must be among `neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`; values 0 to 1. Leave it out when the camera is off or no face was seen. |
+| `face_emotions` | no | The parent's face while speaking, from the face model (MediaPipe blendshapes turned into seven scores, see `backend/dev.html`), averaged over the sentence. Keys must be among `neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`; values 0 to 1. Leave it out when the camera is off or no face was seen. |
 | `speaker` | no | The family member talking: a member `id` from `/family`, such as `mom` (lowercase letters, digits and `-`, up to 30 characters). Used to keep a per-parent progress count. |
+| `loudness` | no | How loud the parent spoke compared with their own normal voice: -1 (much quieter) to 1 (much louder), 0 normal. The frontend measures it from the mic level; never send audio. It sets how strong the feeling is, not which feeling. |
+| `pitch` | no | The parent's voice pitch compared with their own normal: -1 (much lower) to 1 (much higher), 0 normal. The frontend measures it from the mic with a pitch detector (about 6 semitones higher = 1). Like `loudness`, it mainly sets intensity; raised pitch also hints at a more agitated or excited feeling. |
+| `face_frames` | no | **Opt-in only.** 1 to 3 small JPEG snapshots of the parent's face (base64, no `data:` prefix, at most 200,000 characters each; 256 px wide is plenty) from the strongest moments of the sentence. The AI looks at them to judge the emotion, which catches sad and worried far better than the scores. They go to the AI provider with this one request and are never stored or logged. Only send them when the parent has turned the option on. |
+| `face_neutral` | no | **Opt-in only.** One snapshot of the parent's relaxed face, taken when they record their neutral face, so the AI can compare. Ignored without `face_frames`. |
 
 Response:
 ```json
@@ -37,13 +41,18 @@ Response:
   "meaning": "Praising the child for finishing their food",
   "source": "model",
   "unsure": false,
-  "new_signs": ["YOU"]
+  "new_signs": ["YOU"],
+  "intensity": 0.6,
+  "tone_reason": "praise for finishing the food; happy face agrees; voice a bit raised"
 }
 ```
 - `signs` is in signing order, not English word order.
 - `known: false` means there is no sign for that word, so the player fingerspells it.
 - `face` is the grammar: one of `statement`, `yes-no-question`, `wh-question`. It sets the eyebrows.
-- `emotion` is the feeling, one of the six above. It sets the rest of the face and how big or sharp the signing is.
+- `emotion` is the feeling, one of the six above. It sets the rest of the face.
+- `intensity` (0 to 1) is how strong the feeling is: 0.2 calm, 0.5 clear, 0.8 or more very strong. It sets how big and sharp the signing and the face are. A firm warning is `angry` at low intensity; real anger is `angry` at high intensity.
+- `tone_reason` is one short line on which signals decided the emotion and intensity. Show it in testing tools; parents don't need it.
+- How the three tone signals combine: the words decide which emotion when they carry intent (a warning, praise, "be careful"); the face decides when the words are ambiguous ("you ate all of it"); a face that disagrees with clear words, such as smiling while warning, doesn't change the emotion but can soften the intensity; loudness and pitch raise or lower the intensity. A neutral answer never overrides a strong face (one emotion scoring 0.6 or more in `face_emotions`): the face's emotion is used instead. An explicit `emotion` always wins.
 - `face` and `emotion` are separate on purpose. In ASL the eyebrows mark a question whatever the mood, so an angry question needs both.
 - `meaning` is one line on what the backend understood the parent to mean. Show it so the parent can correct it.
 - `source` says where the translation came from:
@@ -87,7 +96,7 @@ Translations a fluent signer has checked. The translator uses these before anyth
 {
   "id": "pips-morning",
   "title": "Pip's Morning",
-  "sentences": [{"text": "More milk?", "signs": [{"gloss": "MORE", "known": true}, {"gloss": "MILK", "known": true}], "face": "yes-no-question", "emotion": "neutral", "meaning": "Asking if the child wants more milk", "source": "model", "unsure": false}]
+  "sentences": [{"text": "More milk?", "signs": [{"gloss": "MORE", "known": true}, {"gloss": "MILK", "known": true}], "face": "yes-no-question", "emotion": "neutral", "intensity": 0.2, "tone_reason": "plain offer", "meaning": "Asking if the child wants more milk", "source": "model", "unsure": false}]
 }
 ```
 Each sentence has `text` plus the same fields as a `/translate` response. An unknown id returns 404.

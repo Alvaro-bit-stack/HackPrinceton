@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backend test bench</title>
+<style>
+  body { font: 15px system-ui, sans-serif; max-width: 1000px; margin: 24px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 28px; margin-bottom: 4px; } h2 { font-size: 19px; margin-top: 28px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  video { width: 320px; border-radius: 8px; background: #000; transform: scaleX(-1); }
+  button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid #888; background: #fff; cursor: pointer; }
+  button.on { background: #c62828; color: #fff; border-color: #c62828; }
+  input, select { font: inherit; padding: 6px; }
+  .bar { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .bar span:first-child { width: 72px; }
+  .bar div { height: 10px; background: #1976d2; border-radius: 3px; }
+  .chip { display: inline-block; padding: 6px 10px; margin: 3px; border-radius: 6px; background: #e3f2fd; font-weight: 600; }
+  .chip.fs { background: #fff3e0; }
+  .chip.new { outline: 2px solid #2e7d32; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 6px; overflow: auto; font-size: 12px; }
+  .muted { color: #666; font-size: 13px; }
+  .warn { color: #c62828; font-weight: 600; }
+  dt { font-weight: 600; } dd { margin: 0 0 8px 0; }
+</style>
+</head>
+<body>
+<h1>Backend test bench</h1>
+<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video and audio never leave this page; only averaged face scores, loudness and pitch numbers are sent. For best results, press "Record my neutral face" once with a relaxed face. With "let AI see my face" on, 2-3 small photos of your face are sent to the AI provider with each sentence; they are not stored.</p>
+
+<div class="row">
+  <div>
+    <video id="video" autoplay muted playsinline></video>
+    <div><button id="cam">Camera on</button> <button id="calib" disabled title="Look at the camera with a relaxed face for 2 seconds">Record my neutral face</button> <span id="camStatus" class="muted"></span></div>
+  </div>
+  <div style="flex:1; min-width: 260px">
+    <div id="bars" class="muted">Face scores appear here when the camera is on.</div>
+    <div id="cues" class="muted" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<h2>Input</h2>
+<div class="row">
+  <button id="talk">🎤 Hold to talk</button>
+  <input id="text" placeholder="…or type a sentence and press Enter" style="flex:1; min-width: 260px" maxlength="300">
+</div>
+<p class="row">
+  <label>Emotion override <select id="emotion"><option value="">(let backend decide)</option>
+    <option>neutral</option><option>happy</option><option>sad</option><option>angry</option><option>surprised</option><option>worried</option></select></label>
+  <label>Speaker id <input id="speaker" placeholder="e.g. mom" size="10"></label>
+  <label><input type="checkbox" id="sendFace" checked> send face scores</label>
+  <label title="Sends 2-3 small photos of your face (and your neutral-face photo) to the AI provider with this sentence"><input type="checkbox" id="sendPhotos"> let AI see my face</label>
+  <label><input type="checkbox" id="sendVoice" checked> send loudness and pitch</label>
+  <button id="resetVoice" title="Your next sentence becomes your normal speaking level">Reset my normal voice</button>
+</p>
+<p id="heard" class="muted"></p>
+<p id="voice" class="muted">Loudness: your first spoken sentence sets your normal level. Speak normally first.</p>
+
+<h2>What the signer gets</h2>
+<div id="result" class="muted">Nothing yet.</div>
+
+<details><summary>Raw request and response</summary>
+  <h3>Request</h3><pre id="req"></pre>
+  <h3>Response</h3><pre id="res"></pre>
+</details>
+
+<script type="module">
+// Libraries from a CDN, so this page needs no build step.
+// MediaPipe Face Landmarker measures 52 facial movements (brows, eyes, mouth); we turn them into emotion scores with
+// simple rules, relative to the parent's own neutral face. Same CDN build and model as Google's web example.
+import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+import { PitchDetector } from "https://esm.sh/pitchy@4";
+const { FaceLandmarker, FilesetResolver } = vision;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---- camera + face scores ----
+let stream = null, loop = null, samples = [], sampling = false, latest = null, landmarker = null;
+let neutral = {}, calibrating = null; // per-movement baseline from "Record my neutral face"
+let neutralJpg = null, peaks = []; // neutral-face photo, and the strongest moments of the current sentence
+function snap() { // small JPEG of the current camera frame, base64 without the data: prefix
+  const v = $("video"), c = document.createElement("canvas");
+  if (!v.videoWidth) return null; // camera still starting
+  c.width = 256; c.height = Math.round(256 * v.videoHeight / v.videoWidth);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.75).split(",")[1];
+}
+function considerPeak(emo) { // keep the 3 most expressive moments, at least 300 ms apart
+  const score = Math.max(...Object.entries(emo).filter(([k]) => k !== "neutral").map(([, v]) => v)) + 0.001;
+  const now = performance.now();
+  const near = peaks.findIndex((p) => Math.abs(p.t - now) < 300);
+  if (near >= 0) { if (score > peaks[near].score) peaks[near] = { t: now, score, jpg: snap() }; return; }
+  if (peaks.length < 3) { peaks.push({ t: now, score, jpg: snap() }); return; }
+  const low = peaks.reduce((m, p, i) => (p.score < peaks[m].score ? i : m), 0);
+  if (score > peaks[low].score) peaks[low] = { t: now, score, jpg: snap() };
+}
+const GAIN = 3; // blendshape changes from a neutral face are small (often 0.1-0.3); scale before the rules
+const avg = (b, ...names) => names.reduce((a, n) => a + (b[n] || 0), 0) / names.length;
+function cuesOf(raw) {
+  const d = {};
+  for (const [k, v] of Object.entries(raw)) d[k] = Math.min(1, Math.max(0, (v - (neutral[k] || 0)) * GAIN));
+  return {
+    browDown: avg(d, "browDownLeft", "browDownRight"),
+    browInnerUp: d.browInnerUp || 0,
+    browOuterUp: avg(d, "browOuterUpLeft", "browOuterUpRight"),
+    eyeSquint: avg(d, "eyeSquintLeft", "eyeSquintRight"),
+    eyeWide: avg(d, "eyeWideLeft", "eyeWideRight"),
+    noseSneer: avg(d, "noseSneerLeft", "noseSneerRight"),
+    mouthPress: avg(d, "mouthPressLeft", "mouthPressRight"),
+    mouthFrown: avg(d, "mouthFrownLeft", "mouthFrownRight"),
+    mouthStretch: avg(d, "mouthStretchLeft", "mouthStretchRight"),
+    upperLipUp: avg(d, "mouthUpperUpLeft", "mouthUpperUpRight"),
+    smile: avg(d, "mouthSmileLeft", "mouthSmileRight"),
+    cheekSquint: avg(d, "cheekSquintLeft", "cheekSquintRight"),
+    jawOpen: d.jawOpen || 0,
+  };
+}
+// Brows carry most of the signal for the hard emotions: down = anger, inner-up alone = sadness, all up = surprise/fear.
+function emotionsOf(c) {
+  const clamp = (x) => Math.min(1, Math.max(0, x));
+  const e = {
+    angry: clamp(0.45 * c.browDown + 0.2 * c.eyeSquint + 0.15 * c.mouthPress + 0.1 * c.noseSneer + 0.1 * c.mouthFrown - 0.3 * c.smile),
+    sad: clamp(0.45 * Math.max(0, c.browInnerUp - 0.6 * c.browOuterUp) + 0.4 * c.mouthFrown + 0.15 * c.mouthPress - 0.3 * c.smile),
+    surprised: clamp(0.35 * c.browOuterUp + 0.15 * c.browInnerUp + 0.25 * c.eyeWide + 0.25 * c.jawOpen - 0.3 * c.browDown),
+    fearful: clamp(0.3 * c.browInnerUp + 0.15 * c.browOuterUp + 0.3 * c.eyeWide + 0.25 * c.mouthStretch - 0.3 * c.browDown),
+    disgusted: clamp(0.45 * c.noseSneer + 0.3 * c.upperLipUp + 0.25 * c.browDown - 0.3 * c.smile),
+    happy: clamp(0.65 * c.smile + 0.35 * c.cheekSquint),
+  };
+  e.neutral = clamp(1 - 3 * Math.max(...Object.values(e))); // neutral only when nothing else is showing
+  const total = Object.values(e).reduce((a, b) => a + b, 0) || 1; // same shape as before: 7 scores summing to 1
+  for (const k in e) e[k] = Math.round(e[k] / total * 1000) / 1000;
+  return e;
+}
+$("cam").onclick = async () => {
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; clearInterval(loop); $("cam").textContent = "Camera on"; $("calib").disabled = true; $("camStatus").textContent = ""; latest = null; return; }
+  try {
+    $("camStatus").textContent = "loading face model…";
+    if (!landmarker) {
+      const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+      landmarker = await FaceLandmarker.createFromOptions(files, {
+        baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
+        outputFaceBlendshapes: true, runningMode: "VIDEO", numFaces: 1 });
+    }
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    $("video").srcObject = stream;
+    await new Promise((r) => ($("video").onloadeddata = r));
+    $("cam").textContent = "Camera off"; $("calib").disabled = false;
+    $("camStatus").textContent = Object.keys(neutral).length ? "" : "Tip: press \"Record my neutral face\" first.";
+    loop = setInterval(() => {
+      const res = landmarker.detectForVideo($("video"), performance.now());
+      const shapes = res.faceBlendshapes && res.faceBlendshapes[0];
+      if (!shapes) { latest = null; drawBars(null); return; }
+      const raw = Object.fromEntries(shapes.categories.map((c) => [c.categoryName, c.score]));
+      if (calibrating) calibrating.push(raw);
+      const cues = cuesOf(raw);
+      latest = emotionsOf(cues);
+      if (sampling) { samples.push(latest); if ($("sendPhotos").checked) considerPeak(latest); }
+      drawBars(latest, cues);
+    }, 100);
+  } catch (e) { $("camStatus").innerHTML = `<span class="warn">${esc(e.message || e)}</span>`; }
+};
+$("calib").onclick = () => {
+  const got = calibrating = []; $("camStatus").textContent = "Hold a relaxed, neutral face…";
+  setTimeout(() => {
+    if (calibrating !== got) return; // a newer press restarted calibration
+    calibrating = null;
+    if (!got.length) { $("camStatus").innerHTML = '<span class="warn">No face seen; try again.</span>'; return; }
+    neutral = {};
+    for (const r of got) for (const [k, v] of Object.entries(r)) neutral[k] = (neutral[k] || 0) + v / got.length;
+    neutralJpg = snap();
+    $("camStatus").textContent = "Neutral face recorded.";
+  }, 2000);
+};
+const bar = (k, v, color = "#1976d2") => `<div class="bar"><span>${k}</span><div style="width:${Math.round(v * 200)}px;background:${color}"></div><span>${v.toFixed(2)}</span></div>`;
+function drawBars(s, cues) {
+  if (!s) { $("bars").textContent = "No face seen."; $("cues").textContent = ""; return; }
+  $("bars").innerHTML = "<b>Emotion scores sent</b>" + Object.entries(s).map(([k, v]) => bar(k, v)).join("");
+  $("cues").innerHTML = "<b>Movements measured</b>" + ["browDown", "browInnerUp", "browOuterUp", "eyeSquint", "eyeWide", "mouthPress", "mouthFrown", "noseSneer", "smile", "jawOpen"]
+    .map((k) => bar(k, cues[k], "#7b1fa2")).join("");
+}
+// Expressions are brief, so a plain average over the whole sentence washes them out: use each score's
+// 75th percentile across the frames (its strong moments), then renormalize to sum to 1.
+function averageSamples() {
+  if (!samples.length) return null;
+  const out = {};
+  for (const k of Object.keys(samples[0])) {
+    if (k === "neutral") continue;
+    const v = samples.map((s) => s[k]).sort((a, b) => a - b);
+    out[k] = v[Math.min(v.length - 1, Math.floor(v.length * 0.75))];
+  }
+  out.neutral = Math.max(0, 1 - 3 * Math.max(...Object.values(out))); // same rule as per frame, so a brief frown still counts
+  const total = Object.values(out).reduce((a, b) => a + b, 0) || 1;
+  for (const k in out) out[k] = Math.round(out[k] / total * 1000) / 1000;
+  return out;
+}
+
+// ---- voice loudness (relative to this speaker's normal; mics differ, so absolute volume means nothing) ----
+let audio = null, levels = [], pitches = [], baselineDb = null, baselinePitch = null, lastLoudness = null;
+async function startLevels() {
+  levels = []; pitches = [];
+  try {
+    if (!audio) {
+      const ctx = new AudioContext();
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
+      ctx.createMediaStreamSource(mic).connect(analyser);
+      audio = { ctx, analyser, buf: new Float32Array(analyser.fftSize), timer: null, detector: PitchDetector.forFloat32Array(analyser.fftSize) };
+    }
+    await audio.ctx.resume();
+    if (!sampling || audio.timer) return; // released before the mic was ready: don't start an interval nobody stops
+    audio.timer = setInterval(() => {
+      audio.analyser.getFloatTimeDomainData(audio.buf);
+      let sum = 0; for (const x of audio.buf) sum += x * x;
+      const db = 10 * Math.log10(sum / audio.buf.length + 1e-12);
+      if (db > -55) { // ponytail: fixed noise gate; a noisy room counts as speech. Calibrate per room if it misfires.
+        levels.push(db);
+        const [hz, clarity] = audio.detector.findPitch(audio.buf, audio.ctx.sampleRate);
+        if (clarity > 0.9 && hz > 70 && hz < 500) pitches.push(hz); // voiced frames only, in human speaking range
+      }
+    }, 100);
+  } catch (e) { $("voice").innerHTML = `<span class="warn">Mic level not available: ${esc(e.message || e)}</span>`; }
+}
+function stopLevels() {
+  if (audio && audio.timer) { clearInterval(audio.timer); audio.timer = null; }
+  if (levels.length < 3) { lastLoudness = null; $("voice").textContent = "Loudness: not enough speech heard."; return { loudness: null, pitch: null }; }
+  const db = levels.reduce((a, b) => a + b, 0) / levels.length;
+  if (baselineDb === null) baselineDb = db;
+  lastLoudness = Math.max(-1, Math.min(1, Math.round((db - baselineDb) / 12 * 100) / 100)); // ~12 dB louder = "much louder"
+  let pitch = null, pitchText = "pitch: not enough voiced speech";
+  if (pitches.length >= 3) {
+    const hz = pitches.slice().sort((a, b) => a - b)[Math.floor(pitches.length / 2)]; // median resists octave errors
+    if (baselinePitch === null) baselinePitch = hz;
+    const semis = 12 * Math.log2(hz / baselinePitch);
+    pitch = Math.max(-1, Math.min(1, Math.round(semis / 6 * 100) / 100)); // ~6 semitones higher = "much higher"
+    pitchText = `pitch ${hz.toFixed(0)} Hz, your normal ${baselinePitch.toFixed(0)} Hz → ${pitch >= 0 ? "+" : ""}${pitch.toFixed(2)}`;
+  }
+  const sign = (x) => (x >= 0 ? "+" : "") + x.toFixed(2);
+  $("voice").textContent = `Loudness ${db.toFixed(1)} dB, your normal ${baselineDb.toFixed(1)} dB → ${sign(lastLoudness)} · ${pitchText}`;
+  return { loudness: lastLoudness, pitch };
+}
+$("resetVoice").onclick = () => { baselineDb = null; baselinePitch = null; $("voice").textContent = "Loudness: your next spoken sentence sets your normal level."; };
+
+// ---- speech ----
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, finalText = "";
+if (!SR) { $("talk").disabled = true; $("talk").title = "Speech recognition not supported in this browser; type instead"; }
+function startTalk() {
+  if (!SR || rec) return;
+  finalText = ""; samples = []; peaks = []; sampling = true; startLevels();
+  rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript; else interim += e.results[i][0].transcript;
+    }
+    $("heard").textContent = "Heard: " + finalText + interim;
+  };
+  rec.onerror = (e) => { $("heard").innerHTML = `<span class="warn">Speech error: ${esc(e.error)}</span>`; };
+  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const voice = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), voice, peaks.map((p) => p.jpg).filter(Boolean)); };
+  rec.start(); $("talk").classList.add("on");
+}
+const stopTalk = () => rec && rec.stop();
+$("talk").addEventListener("pointerdown", startTalk);
+$("talk").addEventListener("pointerup", stopTalk);
+$("talk").addEventListener("pointerleave", stopTalk);
+$("text").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, {}, stream && $("sendPhotos").checked ? [snap()].filter(Boolean) : []); // typed: face right now, no voice
+});
+
+// ---- backend ----
+async function send(text, face, voice, frames = []) {
+  const body = { text };
+  if ($("emotion").value) body.emotion = $("emotion").value;
+  if ($("speaker").value.trim()) body.speaker = $("speaker").value.trim();
+  if (face && $("sendFace").checked) body.face_emotions = face;
+  if ($("sendVoice").checked) {
+    if (voice.loudness != null) body.loudness = voice.loudness;
+    if (voice.pitch != null) body.pitch = voice.pitch;
+  }
+  if ($("sendPhotos").checked && frames.length) {
+    body.face_frames = frames;
+    if (neutralJpg) body.face_neutral = neutralJpg;
+  }
+  $("req").textContent = JSON.stringify(body, (k, v) => (k === "face_frames" || k === "face_neutral" ? "(photos, see below)" : v), 2);
+  $("result").textContent = "Translating… (the backend translates, then double-checks)";
+  const t0 = performance.now();
+  try {
+    const r = await fetch("/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await r.json();
+    const ms = Math.round(performance.now() - t0);
+    $("res").textContent = JSON.stringify(data, null, 2);
+    if (!r.ok) { $("result").innerHTML = `<span class="warn">HTTP ${r.status}: ${esc(JSON.stringify(data.detail))}</span>`; return; }
+    show(data, ms, body);
+  } catch (e) { $("result").innerHTML = `<span class="warn">Backend not reachable: ${esc(e.message)}</span>`; }
+}
+function show(d, ms, sent) {
+  const isNew = new Set(d.new_signs || []);
+  const chips = d.signs.map((s) => `<span class="chip ${s.known ? "" : "fs"} ${isNew.has(s.gloss) ? "new" : ""}" title="${s.known ? "has a sign" : "fingerspell"}">${esc(s.gloss)}${s.known ? "" : " (FS)"}</span>`).join("");
+  $("result").innerHTML = `
+    <div>${chips}</div>
+    <p class="muted">blue = sign, orange = fingerspelled, green outline = new sign for this family</p>
+    <dl>
+      <dt>Meaning (what the backend understood)</dt><dd>${esc(d.meaning)}</dd>
+      <dt>Grammar face (eyebrows)</dt><dd>${esc(d.face)}</dd>
+      <dt>Emotion (rest of face, movement)</dt><dd>${esc(d.emotion)}</dd>
+      <dt>Intensity (how big and sharp the signing is)</dt><dd>${d.intensity ?? "–"}${typeof d.intensity === "number" ? ` <span style="display:inline-block;vertical-align:middle;height:10px;width:${Math.round(d.intensity * 200)}px;background:#c62828;border-radius:3px"></span>` : ""}</dd>
+      <dt>Why this tone</dt><dd>${esc(d.tone_reason || "–")}</dd>
+      <dt>Source</dt><dd>${esc(d.source)} ${d.unsure ? '<span class="warn">— unsure, don\'t trust it</span>' : "— passed its self-check"}</dd>
+      <dt>Face scores sent</dt><dd>${sent.face_emotions ? esc(JSON.stringify(sent.face_emotions)) : "none"}</dd>
+      <dt>Photos the AI saw</dt><dd>${sent.face_frames ? (sent.face_neutral ? `<img src="data:image/jpeg;base64,${sent.face_neutral}" width="96" title="neutral reference" style="opacity:.6;margin-right:8px">` : "") + sent.face_frames.map((f) => `<img src="data:image/jpeg;base64,${f}" width="96" style="margin-right:4px">`).join("") : "none"}</dd>
+      <dt>Loudness sent</dt><dd>${sent.loudness ?? "none"}</dd>
+      <dt>Pitch sent</dt><dd>${sent.pitch ?? "none"}</dd>
+      <dt>Time</dt><dd>${ms} ms</dd>
+    </dl>`;
+}
+</script>
+</body>
+</html>
