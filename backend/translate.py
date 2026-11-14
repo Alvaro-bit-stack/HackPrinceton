@@ -5,6 +5,8 @@ Owner: Person 3. Run `python -m backend.tests` for the tests.
 Pipeline: validate, phrase bank (no model), language model with validation and one retry,
 back-translate self-check with one re-translate, word-for-word fallback when the model is unavailable.
 """
+import base64
+import binascii
 import json
 import logging
 import re
@@ -29,6 +31,8 @@ FACE_TO_EMOTION = {"fearful": "worried", "disgusted": "angry", **{e: e for e in 
 MAX_TEXT = 300
 MAX_MEANING = 300
 FACE_OVERRIDE = 0.6
+MAX_FRAMES = 3
+MAX_FRAME_CHARS = 200_000  # about 150 KB of JPEG; a 256 px snapshot is ~10-20 KB
 FS_RE = re.compile(r"FS:[A-Za-z0-9'-]+")
 EMOTION_WORDS = {"happy": {"love", "yay", "great", "good", "proud"}, "sad": {"sad", "sorry", "miss"},
                  "angry": {"stop", "angry", "mad"}, "surprised": {"wow", "whoa"},
@@ -65,7 +69,18 @@ class _OutOfTime(Exception):
     pass
 
 
-def validate(text, emotion, face_emotions, meaning_hint):
+def _check_jpeg(b64, what):
+    if not isinstance(b64, str) or not b64 or len(b64) > MAX_FRAME_CHARS:
+        raise ValueError(f"{what} must be a base64 JPEG of at most {MAX_FRAME_CHARS} characters")
+    try:
+        raw = base64.b64decode(b64, validate=True)  # all of it, so garbage never reaches the provider
+    except (binascii.Error, ValueError):
+        raise ValueError(f"{what} must be valid base64") from None
+    if not raw.startswith(b"\xff\xd8"):
+        raise ValueError(f"{what} must be a JPEG image")
+
+
+def validate(text, emotion, face_emotions, meaning_hint, loudness=None, pitch=None, face_frames=None, face_neutral=None):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("text must be a non-empty string")
     if len(text) > MAX_TEXT:
@@ -82,6 +97,17 @@ def validate(text, emotion, face_emotions, meaning_hint):
                 raise ValueError(f"face emotion score for {k!r} must be a number from 0 to 1")
     if meaning_hint is not None and (not isinstance(meaning_hint, str) or len(meaning_hint) > MAX_MEANING):
         raise ValueError(f"meaning_hint must be a string of at most {MAX_MEANING} characters")
+    if loudness is not None and (isinstance(loudness, bool) or not isinstance(loudness, (int, float)) or not -1 <= loudness <= 1):
+        raise ValueError("loudness must be a number from -1 to 1")
+    if pitch is not None and (isinstance(pitch, bool) or not isinstance(pitch, (int, float)) or not -1 <= pitch <= 1):
+        raise ValueError("pitch must be a number from -1 to 1")
+    if face_frames is not None:
+        if not isinstance(face_frames, list) or not 1 <= len(face_frames) <= MAX_FRAMES:
+            raise ValueError(f"face_frames must be a list of 1 to {MAX_FRAMES} images")
+        for f in face_frames:
+            _check_jpeg(f, "each face frame")
+    if face_neutral is not None:
+        _check_jpeg(face_neutral, "face_neutral")
 
 
 def face_emotion(face_emotions):
@@ -93,6 +119,20 @@ def face_emotion(face_emotions):
         return None
     top = max(totals, key=totals.get)
     return None if top == "neutral" else (top, totals[top])
+
+
+def _intensity(emotion, loudness, face, pitch=None):
+    """Rule-based strength 0..1: louder or higher voice and an agreeing strong face raise it."""
+    x = (0.2 if emotion == "neutral" else 0.5) + 0.3 * (loudness or 0) + 0.2 * (pitch or 0)
+    if face and face[1] >= FACE_OVERRIDE and face[0] == emotion:
+        x += 0.15
+    return round(min(1.0, max(0.0, x)), 2)
+
+
+def _reason(decided, loudness, pitch=None):
+    voice = ["voice louder than usual" if (loudness or 0) >= 0.3 else "voice quieter than usual" if (loudness or 0) <= -0.3 else "",
+             "pitch higher than usual" if (pitch or 0) >= 0.3 else "pitch lower than usual" if (pitch or 0) <= -0.3 else ""]
+    return "; ".join([f"emotion from {decided}"] + [v for v in voice if v])
 
 
 def validate_model_output(out):
@@ -131,12 +171,13 @@ def _nearest(text, phrases, n=4):
 
 
 def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phrases=None, model=None,
-              corrections=None, budget_seconds=45, offline=False):
-    """Returns {"signs": [{gloss, known}], "face", "emotion", "meaning", "source", "unsure"}.
+              corrections=None, budget_seconds=45, offline=False, loudness=None, pitch=None,
+              face_frames=None, face_neutral=None):
+    """Returns {"signs": [{gloss, known}], "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}.
 
     offline=True never calls the model (phrase bank, then fallback); used when serving books.
     """
-    validate(text, emotion, face_emotions, meaning_hint)
+    validate(text, emotion, face_emotions, meaning_hint, loudness, pitch, face_frames, face_neutral)
     phrases = PHRASES if phrases is None else phrases
     model = llm if model is None else model
     key = _key(text)
@@ -148,19 +189,29 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
     face = face_emotion(face_emotions)
     strong = face[0] if face and face[1] >= FACE_OVERRIDE else None
 
-    def result(signs, face_kind, emo, meaning, source, unsure):
-        return {"signs": _signs_out(signs), "face": face_kind, "emotion": emo, "meaning": meaning,
-                "source": source, "unsure": unsure}
+    def result(signs, face_kind, emo, meaning, source, unsure, decided="the model", tone=None):
+        intensity, reason = tone or (None, None)
+        if intensity is None:
+            intensity = _intensity(emo, loudness, face, pitch)
+        return {"signs": _signs_out(signs), "face": face_kind, "emotion": emo, "intensity": intensity,
+                "tone_reason": reason or _reason(decided, loudness, pitch), "meaning": meaning, "source": source, "unsure": unsure}
+
+    def decided_by(*named):  # what chose the emotion: the first set value, in the same order as the `or` chain
+        return next((n for v, n in named if v), "neutral default")
 
     hit = phrases.get(key)
     if hit and not meaning_hint:
         emo = emotion or strong or hit.get("emotion") or guess_emotion(text)
-        return result(hit["signs"], hit.get("face") or grammar_face(text), emo, hit.get("meaning") or text, "phrase-bank", False)
+        why = decided_by((emotion, "explicit emotion"), (strong, "strong face"), (hit.get("emotion"), "phrase bank"),
+                         (emo != "neutral", "keywords"))
+        return result(hit["signs"], hit.get("face") or grammar_face(text), emo, hit.get("meaning") or text, "phrase-bank", False, why)
 
     def fallback():
         # ponytail: word-for-word in English order with filler dropped. This is not ASL grammar.
         words = [w for w in re.findall(r"[a-z']+", text.lower()) if w not in FILLER]
-        r = result([], grammar_face(text), emotion or strong or guess_emotion(text), text, "fallback", True)
+        emo = emotion or strong or guess_emotion(text)
+        why = decided_by((emotion, "explicit emotion"), (strong, "strong face"), (emo != "neutral", "keywords"))
+        r = result([], grammar_face(text), emo, text, "fallback", True, why)
         r["signs"] = [{"gloss": WORD_TO_GLOSS.get(w, w.upper()), "known": w in WORD_TO_GLOSS} for w in words]
         return r
 
@@ -179,7 +230,8 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         for _ in range(2):  # one retry, telling the model what was wrong
             out = call(model.translate, sentence=text, face_emotions=face_emotions, emotion=emotion,
                        meaning_hint=meaning_hint, vocab=VOCAB, examples=_nearest(text, phrases),
-                       corrections=(corrections or [])[-10:], previous=previous)
+                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness, pitch=pitch,
+                       face_frames=face_frames, face_neutral=face_neutral)  # photos go to the translate call only, never stored
             problems = validate_model_output(out)
             if not problems:
                 return dict(out)  # copy, since the emotion may be overwritten below
@@ -211,7 +263,17 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         if best is None:
             return fallback()
         unsure = True
-    return result(best["signs"], best["face"], best["emotion"], best["meaning"], "model", unsure or bool(meaning_hint and hit))
+    i, r = best.get("intensity"), best.get("tone_reason")  # lenient: a bad value is replaced by the rule, never retried
+    tone = (round(i, 2) if isinstance(i, (int, float)) and not isinstance(i, bool) and 0 <= i <= 1 else None,
+            r if isinstance(r, str) and 0 < len(r) <= 200 else None)
+    if not emotion and strong and best["emotion"] == "neutral":
+        # mirror of "a neutral face never overrides": a neutral reading never overrides a strong face
+        best["emotion"] = strong
+        why = f"face clearly showed {strong}, so not neutral" + (f"; model said: {tone[1]}" if tone[1] else "")
+        rule = _intensity(strong, loudness, face, pitch)  # the model's intensity was for "neutral", so don't let it cap this
+        tone = (max(tone[0] or 0, rule), why[:200])
+    return result(best["signs"], best["face"], best["emotion"], best["meaning"], "model", unsure or bool(meaning_hint and hit),
+                  "explicit emotion" if emotion else "the model", tone)
 
 
 if __name__ == "__main__":
