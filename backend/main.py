@@ -9,13 +9,13 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 from backend.books import get_book, list_books
 from backend.corrections import load_corrections, save_correction
 from backend.family import load_family, save_family
 from backend.progress import log_usage, new_signs, progress
-from backend.translate import VOCAB, translate
+from backend.translate import MAX_FRAME_CHARS, MAX_FRAMES, VOCAB, translate
 from ml.recognizer import predict
 
 app = FastAPI(title="HackPrinceton sign bridge")
@@ -32,6 +32,8 @@ class TranslateIn(BaseModel):
     face_emotions: Optional[dict[str, float]] = None
     loudness: Optional[float] = Field(None, ge=-1, le=1)  # parent's voice vs their own normal; sets intensity only
     pitch: Optional[float] = Field(None, ge=-1, le=1)  # same idea for voice pitch
+    face_frames: Optional[list[Annotated[str, Field(max_length=MAX_FRAME_CHARS)]]] = Field(None, max_length=MAX_FRAMES)  # opt-in: up to 3 base64 JPEG snapshots of the strongest moments
+    face_neutral: Optional[str] = Field(None, max_length=MAX_FRAME_CHARS)  # opt-in: the parent's neutral-face snapshot, for comparison
     speaker: Optional[str] = Field(None, pattern=r"^[a-z0-9-]{1,30}$")  # a family member id
 
 
@@ -76,7 +78,8 @@ def vocab():
 @app.post("/translate")
 def translate_route(body: TranslateIn):
     try:
-        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections(), loudness=body.loudness, pitch=body.pitch)
+        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections(), loudness=body.loudness, pitch=body.pitch,
+                           face_frames=body.face_frames, face_neutral=body.face_neutral)
         known = [s["gloss"] for s in result["signs"] if s["known"]]
         result["new_signs"] = new_signs(known)
         try:

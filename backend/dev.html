@@ -25,7 +25,7 @@
 </head>
 <body>
 <h1>Backend test bench</h1>
-<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video and audio never leave this page; only averaged face scores, loudness and pitch numbers are sent. For best results, press "Record my neutral face" once with a relaxed face.</p>
+<p class="muted">Speak (or type), with the camera on, and see exactly what the backend sends to the 3D signer. Use Chrome or Edge: speech recognition doesn't work in Firefox. Video and audio never leave this page; only averaged face scores, loudness and pitch numbers are sent. For best results, press "Record my neutral face" once with a relaxed face. With "let AI see my face" on, 2-3 small photos of your face are sent to the AI provider with each sentence; they are not stored.</p>
 
 <div class="row">
   <div>
@@ -48,6 +48,7 @@
     <option>neutral</option><option>happy</option><option>sad</option><option>angry</option><option>surprised</option><option>worried</option></select></label>
   <label>Speaker id <input id="speaker" placeholder="e.g. mom" size="10"></label>
   <label><input type="checkbox" id="sendFace" checked> send face scores</label>
+  <label title="Sends 2-3 small photos of your face (and your neutral-face photo) to the AI provider with this sentence"><input type="checkbox" id="sendPhotos"> let AI see my face</label>
   <label><input type="checkbox" id="sendVoice" checked> send loudness and pitch</label>
   <button id="resetVoice" title="Your next sentence becomes your normal speaking level">Reset my normal voice</button>
 </p>
@@ -75,6 +76,23 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 // ---- camera + face scores ----
 let stream = null, loop = null, samples = [], sampling = false, latest = null, landmarker = null;
 let neutral = {}, calibrating = null; // per-movement baseline from "Record my neutral face"
+let neutralJpg = null, peaks = []; // neutral-face photo, and the strongest moments of the current sentence
+function snap() { // small JPEG of the current camera frame, base64 without the data: prefix
+  const v = $("video"), c = document.createElement("canvas");
+  if (!v.videoWidth) return null; // camera still starting
+  c.width = 256; c.height = Math.round(256 * v.videoHeight / v.videoWidth);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.75).split(",")[1];
+}
+function considerPeak(emo) { // keep the 3 most expressive moments, at least 300 ms apart
+  const score = Math.max(...Object.entries(emo).filter(([k]) => k !== "neutral").map(([, v]) => v)) + 0.001;
+  const now = performance.now();
+  const near = peaks.findIndex((p) => Math.abs(p.t - now) < 300);
+  if (near >= 0) { if (score > peaks[near].score) peaks[near] = { t: now, score, jpg: snap() }; return; }
+  if (peaks.length < 3) { peaks.push({ t: now, score, jpg: snap() }); return; }
+  const low = peaks.reduce((m, p, i) => (p.score < peaks[m].score ? i : m), 0);
+  if (score > peaks[low].score) peaks[low] = { t: now, score, jpg: snap() };
+}
 const GAIN = 3; // blendshape changes from a neutral face are small (often 0.1-0.3); scale before the rules
 const avg = (b, ...names) => names.reduce((a, n) => a + (b[n] || 0), 0) / names.length;
 function cuesOf(raw) {
@@ -135,7 +153,7 @@ $("cam").onclick = async () => {
       if (calibrating) calibrating.push(raw);
       const cues = cuesOf(raw);
       latest = emotionsOf(cues);
-      if (sampling) samples.push(latest);
+      if (sampling) { samples.push(latest); if ($("sendPhotos").checked) considerPeak(latest); }
       drawBars(latest, cues);
     }, 100);
   } catch (e) { $("camStatus").innerHTML = `<span class="warn">${esc(e.message || e)}</span>`; }
@@ -148,6 +166,7 @@ $("calib").onclick = () => {
     if (!got.length) { $("camStatus").innerHTML = '<span class="warn">No face seen; try again.</span>'; return; }
     neutral = {};
     for (const r of got) for (const [k, v] of Object.entries(r)) neutral[k] = (neutral[k] || 0) + v / got.length;
+    neutralJpg = snap();
     $("camStatus").textContent = "Neutral face recorded.";
   }, 2000);
 };
@@ -226,7 +245,7 @@ let rec = null, finalText = "";
 if (!SR) { $("talk").disabled = true; $("talk").title = "Speech recognition not supported in this browser; type instead"; }
 function startTalk() {
   if (!SR || rec) return;
-  finalText = ""; samples = []; sampling = true; startLevels();
+  finalText = ""; samples = []; peaks = []; sampling = true; startLevels();
   rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
   rec.onresult = (e) => {
     let interim = "";
@@ -236,7 +255,7 @@ function startTalk() {
     $("heard").textContent = "Heard: " + finalText + interim;
   };
   rec.onerror = (e) => { $("heard").innerHTML = `<span class="warn">Speech error: ${esc(e.error)}</span>`; };
-  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const voice = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), voice); };
+  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const voice = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), voice, peaks.map((p) => p.jpg).filter(Boolean)); };
   rec.start(); $("talk").classList.add("on");
 }
 const stopTalk = () => rec && rec.stop();
@@ -244,11 +263,11 @@ $("talk").addEventListener("pointerdown", startTalk);
 $("talk").addEventListener("pointerup", stopTalk);
 $("talk").addEventListener("pointerleave", stopTalk);
 $("text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, {}); // typed: use the face right now, no voice
+  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, {}, stream && $("sendPhotos").checked ? [snap()].filter(Boolean) : []); // typed: face right now, no voice
 });
 
 // ---- backend ----
-async function send(text, face, voice) {
+async function send(text, face, voice, frames = []) {
   const body = { text };
   if ($("emotion").value) body.emotion = $("emotion").value;
   if ($("speaker").value.trim()) body.speaker = $("speaker").value.trim();
@@ -257,7 +276,11 @@ async function send(text, face, voice) {
     if (voice.loudness != null) body.loudness = voice.loudness;
     if (voice.pitch != null) body.pitch = voice.pitch;
   }
-  $("req").textContent = JSON.stringify(body, null, 2);
+  if ($("sendPhotos").checked && frames.length) {
+    body.face_frames = frames;
+    if (neutralJpg) body.face_neutral = neutralJpg;
+  }
+  $("req").textContent = JSON.stringify(body, (k, v) => (k === "face_frames" || k === "face_neutral" ? "(photos, see below)" : v), 2);
   $("result").textContent = "Translating… (the backend translates, then double-checks)";
   const t0 = performance.now();
   try {
@@ -283,6 +306,7 @@ function show(d, ms, sent) {
       <dt>Why this tone</dt><dd>${esc(d.tone_reason || "–")}</dd>
       <dt>Source</dt><dd>${esc(d.source)} ${d.unsure ? '<span class="warn">— unsure, don\'t trust it</span>' : "— passed its self-check"}</dd>
       <dt>Face scores sent</dt><dd>${sent.face_emotions ? esc(JSON.stringify(sent.face_emotions)) : "none"}</dd>
+      <dt>Photos the AI saw</dt><dd>${sent.face_frames ? (sent.face_neutral ? `<img src="data:image/jpeg;base64,${sent.face_neutral}" width="96" title="neutral reference" style="opacity:.6;margin-right:8px">` : "") + sent.face_frames.map((f) => `<img src="data:image/jpeg;base64,${f}" width="96" style="margin-right:4px">`).join("") : "none"}</dd>
       <dt>Loudness sent</dt><dd>${sent.loudness ?? "none"}</dd>
       <dt>Pitch sent</dt><dd>${sent.pitch ?? "none"}</dd>
       <dt>Time</dt><dd>${ms} ms</dd>

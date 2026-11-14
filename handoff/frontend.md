@@ -117,6 +117,14 @@ While the parent holds the talk button, measure the mic level with the Web Audio
 
 **Done when:** speaking louder or higher than usual sends a positive `loudness` or `pitch`, and the request leaves out whichever one the mic couldn't measure.
 
+### 6c. Optional: let the AI see the parent's face
+A switch in settings, **off by default**: "Let AI see my face". When on, send 2 to 3 small snapshots from the strongest moments of each sentence as `face_frames`, plus the neutral-face snapshot as `face_neutral`. The AI then judges the emotion from the photos, which is much better at sad and worried than the scores alone.
+- **Picking the moments:** every face sample already has emotion scores; keep the 3 frames with the highest non-neutral score, at least 300 ms apart. `considerPeak` and `snap` in `backend/dev.html` do exactly this; copy them.
+- **Size:** draw the video to a 256 px wide canvas and use `toDataURL("image/jpeg", 0.75)`, dropping the `data:image/jpeg;base64,` prefix.
+- **Privacy:** say plainly next to the switch that photos of their face go to the AI provider with each sentence and aren't stored. Never send them when the switch is off.
+
+**Done when:** with the switch off, requests never contain `face_frames`; with it on, they contain 1 to 3 snapshots.
+
 ### 7. Highlight new signs and the progress screen
 - Every `/translate` and `/corrections` response has `new_signs`. Highlight those signs in the sign list ("New sign!"), because they widen the child's vocabulary.
 - A Progress page that calls `GET /progress` (add `?speaker=<id>` for one parent):

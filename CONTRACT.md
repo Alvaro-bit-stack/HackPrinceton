@@ -29,6 +29,8 @@ Request:
 | `speaker` | no | The family member talking: a member `id` from `/family`, such as `mom` (lowercase letters, digits and `-`, up to 30 characters). Used to keep a per-parent progress count. |
 | `loudness` | no | How loud the parent spoke compared with their own normal voice: -1 (much quieter) to 1 (much louder), 0 normal. The frontend measures it from the mic level; never send audio. It sets how strong the feeling is, not which feeling. |
 | `pitch` | no | The parent's voice pitch compared with their own normal: -1 (much lower) to 1 (much higher), 0 normal. The frontend measures it from the mic with a pitch detector (about 6 semitones higher = 1). Like `loudness`, it mainly sets intensity; raised pitch also hints at a more agitated or excited feeling. |
+| `face_frames` | no | **Opt-in only.** 1 to 3 small JPEG snapshots of the parent's face (base64, no `data:` prefix, at most 200,000 characters each; 256 px wide is plenty) from the strongest moments of the sentence. The AI looks at them to judge the emotion, which catches sad and worried far better than the scores. They go to the AI provider with this one request and are never stored or logged. Only send them when the parent has turned the option on. |
+| `face_neutral` | no | **Opt-in only.** One snapshot of the parent's relaxed face, taken when they record their neutral face, so the AI can compare. Ignored without `face_frames`. |
 
 Response:
 ```json

@@ -5,6 +5,8 @@ Owner: Person 3. Run `python -m backend.tests` for the tests.
 Pipeline: validate, phrase bank (no model), language model with validation and one retry,
 back-translate self-check with one re-translate, word-for-word fallback when the model is unavailable.
 """
+import base64
+import binascii
 import json
 import logging
 import re
@@ -29,6 +31,8 @@ FACE_TO_EMOTION = {"fearful": "worried", "disgusted": "angry", **{e: e for e in 
 MAX_TEXT = 300
 MAX_MEANING = 300
 FACE_OVERRIDE = 0.6
+MAX_FRAMES = 3
+MAX_FRAME_CHARS = 200_000  # about 150 KB of JPEG; a 256 px snapshot is ~10-20 KB
 FS_RE = re.compile(r"FS:[A-Za-z0-9'-]+")
 EMOTION_WORDS = {"happy": {"love", "yay", "great", "good", "proud"}, "sad": {"sad", "sorry", "miss"},
                  "angry": {"stop", "angry", "mad"}, "surprised": {"wow", "whoa"},
@@ -65,7 +69,18 @@ class _OutOfTime(Exception):
     pass
 
 
-def validate(text, emotion, face_emotions, meaning_hint, loudness=None, pitch=None):
+def _check_jpeg(b64, what):
+    if not isinstance(b64, str) or not b64 or len(b64) > MAX_FRAME_CHARS:
+        raise ValueError(f"{what} must be a base64 JPEG of at most {MAX_FRAME_CHARS} characters")
+    try:
+        raw = base64.b64decode(b64, validate=True)  # all of it, so garbage never reaches the provider
+    except (binascii.Error, ValueError):
+        raise ValueError(f"{what} must be valid base64") from None
+    if not raw.startswith(b"\xff\xd8"):
+        raise ValueError(f"{what} must be a JPEG image")
+
+
+def validate(text, emotion, face_emotions, meaning_hint, loudness=None, pitch=None, face_frames=None, face_neutral=None):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("text must be a non-empty string")
     if len(text) > MAX_TEXT:
@@ -86,6 +101,13 @@ def validate(text, emotion, face_emotions, meaning_hint, loudness=None, pitch=No
         raise ValueError("loudness must be a number from -1 to 1")
     if pitch is not None and (isinstance(pitch, bool) or not isinstance(pitch, (int, float)) or not -1 <= pitch <= 1):
         raise ValueError("pitch must be a number from -1 to 1")
+    if face_frames is not None:
+        if not isinstance(face_frames, list) or not 1 <= len(face_frames) <= MAX_FRAMES:
+            raise ValueError(f"face_frames must be a list of 1 to {MAX_FRAMES} images")
+        for f in face_frames:
+            _check_jpeg(f, "each face frame")
+    if face_neutral is not None:
+        _check_jpeg(face_neutral, "face_neutral")
 
 
 def face_emotion(face_emotions):
@@ -149,12 +171,13 @@ def _nearest(text, phrases, n=4):
 
 
 def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phrases=None, model=None,
-              corrections=None, budget_seconds=45, offline=False, loudness=None, pitch=None):
+              corrections=None, budget_seconds=45, offline=False, loudness=None, pitch=None,
+              face_frames=None, face_neutral=None):
     """Returns {"signs": [{gloss, known}], "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}.
 
     offline=True never calls the model (phrase bank, then fallback); used when serving books.
     """
-    validate(text, emotion, face_emotions, meaning_hint, loudness, pitch)
+    validate(text, emotion, face_emotions, meaning_hint, loudness, pitch, face_frames, face_neutral)
     phrases = PHRASES if phrases is None else phrases
     model = llm if model is None else model
     key = _key(text)
@@ -207,7 +230,8 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         for _ in range(2):  # one retry, telling the model what was wrong
             out = call(model.translate, sentence=text, face_emotions=face_emotions, emotion=emotion,
                        meaning_hint=meaning_hint, vocab=VOCAB, examples=_nearest(text, phrases),
-                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness, pitch=pitch)
+                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness, pitch=pitch,
+                       face_frames=face_frames, face_neutral=face_neutral)  # photos go to the translate call only, never stored
             problems = validate_model_output(out)
             if not problems:
                 return dict(out)  # copy, since the emotion may be overwritten below

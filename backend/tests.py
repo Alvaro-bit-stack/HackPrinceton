@@ -180,6 +180,32 @@ def test_loudness_validation():
         assert "pitch" in raises(T.translate, "hi", pitch=bad, phrases={}, model=FakeModel())
 
 
+def test_face_frames():
+    import base64
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"x" * 200).decode()
+    png = base64.b64encode(b"\x89PNG" + b"x" * 200).decode()
+    for bad in ([], [jpg] * 4, "notalist", [png], ["!!!"], [jpg[:64] + "!!!!"], [jpg + "A" * T.MAX_FRAME_CHARS]):
+        assert "face" in raises(T.translate, "hi", face_frames=bad, phrases={}, model=FakeModel())
+    assert "face_neutral" in raises(T.translate, "hi", face_frames=[jpg], face_neutral=png, phrases={}, model=FakeModel())
+    m = FakeModel([GOOD], [OK])
+    T.translate("put your shoes on", face_frames=[jpg, jpg], face_neutral=jpg, phrases={}, model=m)
+    assert m.t_calls[0]["face_frames"] == [jpg, jpg] and m.t_calls[0]["face_neutral"] == jpg
+    assert "face_frames" not in m.c_calls[0]  # the self-check never sees the photos
+    user = llm.translate_prompt("x", T.VOCAB, face_frames=[jpg, jpg], face_neutral=jpg)[1]
+    assert "Image 1 is their relaxed, neutral face" in user and "Images 2 to 3" in user
+    assert "Images 1 to 1" in llm.translate_prompt("x", T.VOCAB, face_frames=[jpg])[1]
+    oa = llm._user_content("openai", "hi", [jpg, jpg])
+    assert oa[0] == {"type": "text", "text": "hi"} and oa[1]["image_url"]["url"].startswith("data:image/jpeg;base64,") and len(oa) == 3
+    an = llm._user_content("anthropic", "hi", [jpg])
+    assert an[0]["source"]["media_type"] == "image/jpeg" and an[-1]["text"] == "hi"
+    assert llm._user_content("openai", "hi", []) == "hi"
+    with mock.patch.object(llm, "call_json") as cj:  # neutral photo alone is not sent
+        llm.translate(5, sentence="x", vocab=T.VOCAB, face_neutral=jpg)
+        assert cj.call_args.kwargs["images"] == []
+        llm.translate(5, sentence="x", vocab=T.VOCAB, face_frames=[jpg], face_neutral=jpg)
+        assert cj.call_args.kwargs["images"] == [jpg, jpg]
+
+
 def test_pitch():
     low, high = (T.translate("stop it", pitch=v, phrases={}, offline=True) for v in (-0.6, 0.8))
     assert high["intensity"] > low["intensity"] and "pitch higher" in high["tone_reason"] and "pitch lower" in low["tone_reason"]
