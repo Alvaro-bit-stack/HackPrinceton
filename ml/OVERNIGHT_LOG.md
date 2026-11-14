@@ -161,3 +161,8 @@ python ml/recognizer.py && python ml/test_reference.py
 ### 2026-11-14 00:52 Final scope check
 - `git diff --name-only main...overnight-sign-model`: 26 paths, **all under ml/**. Nothing outside ml/ was created, modified or deleted; root .gitignore untouched; main untouched; no force-push (nothing was pushed). Working tree clean after the final commit. Run stopped here (Phase 5 complete).
 
+
+### 2026-11-14 15:33 Merged origin/main
+- Merged origin/main (78c8b31) into this branch. Its ml/ files (web upload b520ce5) were identical apart from CRLF line endings; kept this branch's LF copies. origin/main lacked ml/results/, which this branch keeps.
+- **Gap:** origin/main grew shared/vocab.json to 19 signs (MOM, DAD, DRINK, GIVE). model.npz and references.npz still cover only the original 15, so `predict()` never returns the new four, and `lookup('mom')` returns None. MOTHER, FATHER and DRINK were *negatives* in training. Fix: rerun data_prep.py, wlasl_prep.py, train.py, evaluate.py, reference.py --build. test_reference.py now checks only signs that have a reference.
+

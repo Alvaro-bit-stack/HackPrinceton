@@ -1,26 +1,25 @@
-# frontend: everything the family sees (Person 2)
+# Frontend (Person 2)
 
-A React app with two pages: the two-way translator and the practice page.
+Everything the family sees, except the signer itself.
 
 | File | What it does |
 |---|---|
 | `src/App.jsx` | Navigation between pages. |
-| `src/pages/Translator.jsx` | Parent speaks and the app signs; child signs and the app reads. |
-| `src/pages/Learn.jsx` | Practice page with gentle hints. |
-| `src/components/SignPlayer.jsx` | Shows the signs. Currently words on cards; swap in the 3D signer or video clips. |
-| `src/components/Webcam.jsx` | Camera view that feeds hand landmarks to the page. |
+| `src/pages/Translator.jsx` | Speak page, the main goal: the parent speaks and the app signs. |
+| `src/pages/Storybook.jsx` | Storybook page, the pivot: a book signed one sentence per page. |
+| `src/pages/Learn.jsx`, `src/components/Webcam.jsx` | Practice page, a stretch feature. |
 | `src/api.js` | Calls to the backend. |
 | `src/styles.css` | Styles. |
 
-`src/lib/handTracker.js` belongs to Person 1 and `src/lib/speech.js` to Person 3. Import them, don't edit them.
+Not yours: `src/components/SignPlayer.jsx` and `public/models/` belong to Person 1, `src/lib/speech.js` to Person 3, and `src/lib/handTracker.js` to Person 1. Import them, don't edit them.
 
 ## Tasks
-1. Run the app against the backend and confirm both pages load.
-2. Replace the word cards in `SignPlayer.jsx` with the signer: load `public/models/signer.glb` with three.js, or play a video clip per sign.
-3. Show the face cue clearly, since it is how the parent learns the grammar.
-4. Make the practice page child-friendly: big targets, few words, a reward when a sign lands.
-5. Handle the unhappy paths: no camera, no microphone, backend down.
-6. Polish for the demo: one clean screen per direction.
+1. Run the app against the backend and confirm the Speak and Storybook pages work.
+2. Speak page: make it one clear action. Big microphone button, the sentence heard, then the signing.
+3. Storybook page: make it feel like a picture book. Large text, the signer beside it, easy page turns, and a replay button.
+4. Show the face cue prominently on both pages, since it is how the parent learns the grammar.
+5. Handle the unhappy paths: no microphone, speech not understood, backend down.
+6. Make it child-friendly: big targets, few words, calm colours.
 
 ## Run
 ```
