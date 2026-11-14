@@ -329,6 +329,28 @@ def test_review_fixes():
         assert glosses(b["sentences"][1]) == ["ME", "LOVE", "YOU"]
 
 
+def test_evaluate():
+    from backend import evaluate as E
+    sentences = json.loads(E.SENTENCES.read_text(encoding="utf-8"))
+    vocab = {v["gloss"] for v in T.VOCAB}
+    for s in sentences:  # every expected sign must exist, or the score can never be met
+        assert set(s.get("expect", {}).get("signs", [])) <= vocab, s
+        T.validate(s["text"], None, s.get("face_emotions"), None)
+    rows, summary = E.evaluate(sentences, offline=True, phrases={})
+    assert summary["sentences"] == len(sentences) and summary["source"] == {"fallback": len(sentences)}
+    # scoring with a fake model: right face, wrong emotion, one key sign missing
+    m = FakeModel([{"signs": ["MILK", "FS:PIZZA"], "face": "yes-no-question", "emotion": "happy", "meaning": "m"}], [OK])
+    rows, summary = E.evaluate([{"text": "do you want more milk", "expect": {"face": "yes-no-question", "emotion": "neutral", "signs": ["MILK", "MORE"]}}],
+                               model=m, phrases={})
+    r = rows[0]
+    assert r["face_ok"] is True and r["emotion_ok"] is False and r["missing_signs"] == "MORE"
+    assert r["signs"] == "MILK PIZZA*" and r["fingerspelled"] == 1 and r["fully_signed"] is False
+    assert summary["key signs present"] == "1/2" and summary["question type correct"] == "1/1"
+    with tempfile.TemporaryDirectory() as d:
+        path = E.write_review_sheet(rows, Path(d))
+        assert "signer_review" in path.read_text(encoding="utf-8").splitlines()[0]
+
+
 def run():
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0
