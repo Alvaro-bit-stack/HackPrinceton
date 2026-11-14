@@ -1,6 +1,53 @@
 # Overnight log: sign-recognition model
 
-_(Summary will be written here at the end of the run.)_
+## Summary (read this first)
+
+Branch `overnight-sign-model`, 4 commits on top of `main` (a5ff556). Only files under `ml/` changed. Run time was about 1 hour; I stopped after Phase 5 as instructed.
+
+**What worked**
+- `predict()` now uses a small 1D-CNN over the whole frame sequence: 65k parameters, 240 KB `ml/model.npz`. It runs in pure numpy (about 4 ms per call), so the backend needs no new dependency.
+  - The signature and output are unchanged.
+  - It falls back to the original template nearest-neighbour if the model file is missing.
+  - It returns `{"sign": None, "confidence": 0.0}` on empty, short, NaN, or misshapen input.
+- **Data:** ASL Citizen hand landmarks for all 15 vocab signs, using the official signer-disjoint split. WLASL clips of the vocab signs (32 more signers) were added to training only. 86 other signs serve as "not a vocab sign" examples.
+- **Test results** (evaluated once, unseen signers, 233 vocab clips):
+
+  | Model | Top-1 accuracy |
+  |---|---:|
+  | Baseline A, original last frame | 24% |
+  | Baseline B1, sequence k-NN | 60% |
+  | Baseline B2, sequence DTW | 67% |
+  | **Model C, 1D-CNN (shipped)** | **91%** |
+
+  At the shipped threshold (0.62), the model answers 85% of vocab attempts and its answers are right 96% of the time.
+- `python ml/recognizer.py` passes in the system Python (numpy only). It covers the original checks, the edge cases, a movement-only synthetic pair (the old baseline gets 0/8, sequence features get 8/8), and 15 reference clips (15/15).
+- `train.py` is reproducible: a re-run with seed 0 gave bit-identical weights.
+- Phase 4 is done: `reference.lookup("thirsty")` returns WATER's reference clip, `lookup("banana")` returns `None`, and the tests pass.
+
+**What fell short / failed**
+- **Precision missed its target on test.** I chose `MIN_CONFIDENCE` = 0.62 on validation for at least 90% precision, with non-vocab attempts weighted 1:1. On test that gives **87%**, because 9% of non-vocab signs get a vocab answer (for example TOY → PLAY and SORRY → LOVE). Validation had only 75 vocab clips. I did not re-tune on test. The test trade-off shows 0.80 would give about 93% precision at 77% coverage. **Raising it is your call.** Change `min_confidence` in `model.npz`, or add a `--target-precision` value and retrain.
+- **ME is weak** (54% top-1; often read as LOVE). Both signs are made at the chest, and the model sees only one hand and no body.
+- **Not measured:** per-signer accuracy (no signer IDs in public ASL Citizen mirrors), lighting, camera angle, children, our own webcams, and the live browser loop.
+- Google ISLR (Kaggle) wasn't used because there were no credentials. pip needed `--use-feature=truststore` because AVG antivirus intercepts TLS.
+
+**Review first**
+1. `ml/README.md`, Task 5 and "Known limitations".
+2. The decision about `MIN_CONFIDENCE` (0.62 shipped vs about 0.8; see the trade-off table).
+3. The "Requested changes outside ml/" below. The 15-frame window and the hand switching in `Webcam.jsx` matter most.
+4. Licenses: ASL Citizen is research-only and WLASL is C-UDA (academic). Fine for a hackathon demo, not for commercial use without review.
+
+**Reproduce** (from the repo root, Windows paths):
+```
+python -m venv ml/.venv
+ml/.venv/Scripts/python -m pip install --use-feature=truststore --upgrade pip
+ml/.venv/Scripts/python -m pip install -r ml/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+ml/.venv/Scripts/python ml/data_prep.py          # ~15 min
+ml/.venv/Scripts/python ml/wlasl_prep.py         # ~6 min
+ml/.venv/Scripts/python ml/train.py              # ~10 min, writes ml/model.npz + ml/results/
+ml/.venv/Scripts/python ml/evaluate.py           # ~3 min, writes ml/results/accuracy_table.md
+ml/.venv/Scripts/python ml/reference.py --build
+python ml/recognizer.py && python ml/test_reference.py
+```
 
 ## Requested changes outside ml/
 
@@ -75,7 +122,7 @@ _(Summary will be written here at the end of the run.)_
 - `2026-11-14 00:27` [train.py] done; summary in results/train_summary.json
 
 ### 2026-11-14 00:29 Run 1 (ASL Citizen only) result
-- Lines above (00:21-00:27): Model C beats both baselines on validation (top-1 96% vs DTW 79% vs original last-frame 20%). Chosen config `small` (64 channels, dilations 1,2; 22k params, 239 KB file).
+- Lines above (00:21-00:27): Model C beats both baselines on validation (top-1 96% vs DTW 79% vs original last-frame 20%). Chosen config `small` (64 channels, dilations 1,2; 65k params, 239 KB file).
 - Caveat: validation has only 75 vocab clips (3-7 per sign), so +-1 clip moves per-sign accuracy a lot and picking the best epoch on it is optimistic. The test split will tell.
 - `python ml/recognizer.py` passes with the model, both in ml/.venv and in the system Python (numpy only, no torch): 15/15 reference clips, movement-only pair, edge cases.
 - Added WLASL (Voxel51/WLASL on HF, C-UDA license, academic use only) as extra *training* data: `wlasl_prep.py` extracted 132 clips (5-14 per sign, 4-11 signers per sign) with MediaPipe HandLandmarker (same model as the browser), 0 skipped. Val/test stay ASL Citizen only. Next: run 2 = same sweep with WLASL added; pick between run 1 and run 2 on the same validation set.
@@ -99,3 +146,14 @@ _(Summary will be written here at the end of the run.)_
 - **Test split, evaluated once** (`evaluate.py`; `results/accuracy_table.md`): Model C top-1 **91%** vs A 24% / B1 60% / B2 67%. At 0.62: coverage 85%, precision on vocab attempts 96%, weighted precision **87% (below the 90% target)**, 9% of non-vocab clips get a vocab answer. Short 15-frame windows: 87% top-1.
 - I re-ran evaluate.py once more only to fix the per-sign precision column (it had mixed in the 5:1 non-vocab clips, making e.g. ALL-DONE look like 38%); same model, same threshold, same numbers otherwise. **The threshold was NOT changed after seeing test.** The test trade-off table shows 0.80 would give ~93% precision at 77% coverage; that is for a human to decide, flagged in the summary.
 - Main errors: ME -> LOVE (5/13; both at the chest, location invisible with hand-only input); non-vocab near-twins TOY -> PLAY, DONT KNOW -> ALL-DONE, SORRY -> LOVE, HOME/OOPS -> EAT.
+- `2026-11-14 00:48` [train.py] data: 1703 train / 435 val clips, 16 classes (389 / 75 are vocab signs)
+- `2026-11-14 00:51` [train.py] Model C `small` {'width': 64, 'dilations': (1, 2), 'dropout': 0.2, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 51/81, val_acc 0.973, val_loss 0.473, 146s
+- `2026-11-14 00:51` [train.py] chosen config: `small` (val_acc 0.973)
+- `2026-11-14 00:51` [train.py] temperature 0.74 (val NLL 0.434); MIN_CONFIDENCE 0.62 -> val precision 0.902, coverage 0.880, false accepts on non-vocab 0.081
+- `2026-11-14 00:51` [train.py] exported data\repro.npz (240 KB); numpy vs torch max prob diff 6.26e-07
+- `2026-11-14 00:51` [train.py] done; summary in results/train_summary.json
+
+### 2026-11-14 00:52 Reproducibility check and Phase 5
+- Re-ran `train.py --configs small --no-baselines --out data/repro.npz` (seed 0): same best epoch (51), val acc 0.973, temperature 0.74, threshold 0.62; weights **bit-identical** to model.npz. The re-run overwrote results/train_summary.json, results/history_small.csv and model_selfcheck.npz with single-config versions; restored them from the last commit with `git checkout -- <those files>` (working-tree restore only, no history change). The 'Model C small ... 146s' / 'chosen config' / 'exported data\repro.npz' lines right above are from this check.
+- Inference speed: ~4 ms per `predict()` (15 or 60 frames), system Python + numpy.
+- Wrote `ml/README.md` (kept original content; added status, how it works, Task 5 table, model comparison, coverage trade-off, variants, known limitations) and the summary at the top of this log.
