@@ -2,7 +2,7 @@
 
 ## Summary (read this first)
 
-Branch `overnight-sign-model`, 4 commits on top of `main` (a5ff556). Only files under `ml/` changed. Run time was about 1 hour; I stopped after Phase 5 as instructed.
+Branch `overnight-sign-model`, 5 commits on top of `main` (a5ff556). Only files under `ml/` changed. Run time was about 1 hour; I stopped after Phase 5 as instructed.
 
 **What worked**
 - `predict()` now uses a small 1D-CNN over the whole frame sequence: 65k parameters, 240 KB `ml/model.npz`. It runs in pure numpy (about 4 ms per call), so the backend needs no new dependency.
@@ -157,3 +157,7 @@ python ml/recognizer.py && python ml/test_reference.py
 - Re-ran `train.py --configs small --no-baselines --out data/repro.npz` (seed 0): same best epoch (51), val acc 0.973, temperature 0.74, threshold 0.62; weights **bit-identical** to model.npz. The re-run overwrote results/train_summary.json, results/history_small.csv and model_selfcheck.npz with single-config versions; restored them from the last commit with `git checkout -- <those files>` (working-tree restore only, no history change). The 'Model C small ... 146s' / 'chosen config' / 'exported data\repro.npz' lines right above are from this check.
 - Inference speed: ~4 ms per `predict()` (15 or 60 frames), system Python + numpy.
 - Wrote `ml/README.md` (kept original content; added status, how it works, Task 5 table, model comparison, coverage trade-off, variants, known limitations) and the summary at the top of this log.
+
+### 2026-11-14 00:52 Final scope check
+- `git diff --name-only main...overnight-sign-model`: 26 paths, **all under ml/**. Nothing outside ml/ was created, modified or deleted; root .gitignore untouched; main untouched; no force-push (nothing was pushed). Working tree clean after the final commit. Run stopped here (Phase 5 complete).
+
