@@ -58,6 +58,8 @@ Starting values below. Tune them by eye, and have a fluent signer check them.
 - **`pip.glb`** has all the shape keys above.
 - **`signer.glb`** (the Meshy character) has only the five brow keys. Its eyebrows work, but mouth and eye emotion won't show until those keys are added.
 
+**`intensity` scales all of it.** The response now has `intensity`, 0 to 1. Treat the table above as the values at 0.5. Scale the shape-key weights and the speed and size changes up or down with intensity, for example `weight × intensity / 0.5` capped at 1, and `1 + (speed - 1) × intensity / 0.5`. At low intensity `angry` should read as firm, not furious. Missing `intensity` means 0.5.
+
 ### 1d. Blending
 Ease into each new face over about 150 ms rather than snapping. Keep it for the whole sentence, and return to neutral after the last sign.
 

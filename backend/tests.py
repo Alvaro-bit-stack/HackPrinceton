@@ -109,7 +109,7 @@ def test_model_happy_path_and_fs():
     r = T.translate("You love Pip's AB-1", phrases={}, model=m)
     assert r["source"] == "model" and r["unsure"] is False and r["emotion"] == "happy"
     assert r["signs"][1] == {"gloss": "PIP'S", "known": False} and r["signs"][0] == {"gloss": "YOU", "known": True}
-    assert set(r) == {"signs", "face", "emotion", "meaning", "source", "unsure"}
+    assert set(r) == {"signs", "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}
     assert m.t_calls[0]["timeout"] <= 45 and m.c_calls[0]["text"] == "You love Pip's AB-1"
 
 
@@ -170,6 +170,31 @@ def test_explicit_emotion_forced():
     r = T.translate("Do you want more milk?", "angry", {"happy": 0.9}, phrases={}, model=m)
     assert r["emotion"] == "angry" and m.t_calls[0]["emotion"] == "angry"
     assert T.translate("x", phrases={}, model=FakeModel([GOOD], [OK]), face_emotions={"sad": 0.9})["emotion"] == "neutral"  # model decides
+
+
+def test_loudness_validation():
+    for bad in (True, 1.5, -2, "loud"):
+        assert "loudness" in raises(T.translate, "hi", loudness=bad, phrases={}, model=FakeModel())
+    assert T.translate("hi", loudness=-1, phrases={}, offline=True)["intensity"] == 0
+
+
+def test_tone_fields():
+    m = FakeModel([dict(GOOD, emotion="angry", intensity=0.35, tone_reason="a warning")], [OK])
+    r = T.translate("Hit again and time out.", face_emotions={"happy": 0.7}, loudness=0.2, phrases={}, model=m)
+    assert (r["emotion"], r["intensity"], r["tone_reason"]) == ("angry", 0.35, "a warning") and m.t_calls[0]["loudness"] == 0.2
+    m = FakeModel([GOOD], [OK])  # no tone fields: accepted without a retry, rule-based values
+    r = T.translate("x", loudness=0.9, phrases={}, model=m)
+    assert len(m.t_calls) == 1 and 0 <= r["intensity"] <= 1 and r["tone_reason"] and "louder" in r["tone_reason"]
+    m = FakeModel([dict(GOOD, intensity=7, tone_reason="r" * 201)], [OK])
+    r = T.translate("x", phrases={}, model=m)
+    assert len(m.t_calls) == 1 and r["intensity"] == 0.2 and r["tone_reason"]
+    m = FakeModel([dict(GOOD, emotion="happy", intensity=0.4)], [OK])
+    assert T.translate("x", "sad", phrases={}, model=m)["intensity"] == 0.4  # explicit emotion keeps the model's intensity
+    quiet, loud = (T.translate("stop it", loudness=v, phrases={}, offline=True) for v in (-0.5, 0.8))
+    assert loud["intensity"] > quiet["intensity"] and "quieter" in quiet["tone_reason"] and loud["source"] == "fallback"
+    bank = {"hi": {"english": "hi", "signs": ["YES"], "emotion": "happy"}}
+    a, b = (T.translate("hi", loudness=v, phrases=bank) for v in (0, 1))
+    assert b["intensity"] > a["intensity"] and "phrase bank" in a["tone_reason"]
 
 
 def test_correction_overrides():
@@ -307,7 +332,8 @@ def test_llm_no_key_unavailable():
 
 def test_prompts():
     s, u = llm.translate_prompt("Hi", T.VOCAB, {"happy": 0.5}, "sad", "greeting", [{"english": "a", "signs": ["YES"]}], [{"text": "t"}], {"signs": ["NO"], "problem": "bad"})
-    assert "MILK: milk" in s + u and "FS:WORD" in s and "fluent signer" in s and "outrank" in u and "greeting" in u and "bad" in u and "Sentence: Hi" in u
+    assert "MILK: milk" in s + u and "FS:WORD" in s and "fluent signer" in s and "words decide" in u and "greeting" in u and "bad" in u and "Sentence: Hi" in u
+    assert "loudness" not in u and "+0.70" in llm.translate_prompt("Hi", T.VOCAB, loudness=0.7)[1]
 
 
 def test_review_fixes():

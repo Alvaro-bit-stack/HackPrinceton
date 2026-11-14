@@ -86,16 +86,25 @@ Never simplify for the child's age: sign the full meaning with the richest allow
 
 {GRAMMAR_NOTES}
 
+Tone rules:
+- Infer the emotion from what the parent intends, not only from feeling words. A warning, rule or consequence is firm: "angry" with low-to-medium intensity. Praise is "happy". "Be careful" or danger is "worried". Bad news or comfort is "sad". Amazement is "surprised". Use "neutral" only for plain information or routine requests.
+- Intensity is 0 to 1, how strong the feeling is (sign size and speed): 0.2 calm, 0.5 clear, 0.8 or more very strong.
+
 Reply with one JSON object and nothing else:
-{{"signs": [gloss or "FS:WORD", ...], "face": "statement" | "yes-no-question" | "wh-question", "emotion": "neutral" | "happy" | "sad" | "angry" | "surprised" | "worried", "meaning": "<one short line>"}}"""
+{{"signs": [gloss or "FS:WORD", ...], "face": "statement" | "yes-no-question" | "wh-question", "emotion": "neutral" | "happy" | "sad" | "angry" | "surprised" | "worried", "intensity": 0.0-1.0, "tone_reason": "<one short line: which signals decided the emotion and intensity>", "meaning": "<one short line>"}}"""
 
 
 def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_hint=None,
-                     examples=(), corrections=(), previous=None):
+                     examples=(), corrections=(), previous=None, loudness=None):
     parts = ["Allowed glosses (gloss: English words):\n" + "\n".join(f"{v['gloss']}: {', '.join(v['english'])}" for v in vocab)]
     if face_emotions:
         parts.append(f"The parent's face emotion scores (0 to 1): {json.dumps(face_emotions)}. "
-                     "The words outrank the face when they disagree.")
+                     "The words decide the emotion when they carry intent. The face decides when the words are ambiguous "
+                     '(e.g. "you ate all of it"). A face that disagrees with clear words (a parent smiling while warning, '
+                     "to soften it) does not change the emotion but can lower the intensity.")
+    if loudness is not None:
+        parts.append(f"The parent's voice loudness relative to their normal: {loudness:+.2f} (-1 much quieter, 0 normal, +1 much louder). "
+                     "Loudness tells how strong the feeling is, not which feeling.")
     if emotion:
         parts.append(f'The emotion is "{emotion}". Use it as is in the "emotion" field.')
     if meaning_hint:

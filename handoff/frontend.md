@@ -110,6 +110,11 @@ When the camera is off, denied or sees no face, send nothing. The backend works 
 
 **Done when:** switching the picker changes the avatar and the `speaker` field in the request.
 
+### 6b. Send voice loudness
+While the parent holds the talk button, measure the mic level with the Web Audio API (an `AnalyserNode` on a `getUserMedia({audio: true})` stream, RMS in dB every 100 ms, ignoring silence). Compare the sentence's average with that parent's normal level (their first sentence, with a "reset my normal voice" button) and send `loudness = (dB - normal dB) / 12`, clamped to -1..1. Mics and rooms differ, so never send an absolute volume, and never send audio. `backend/dev.html` has a working version you can copy.
+
+**Done when:** speaking louder than usual sends a positive `loudness`, and the request has no `loudness` when the mic level isn't available.
+
 ### 7. Highlight new signs and the progress screen
 - Every `/translate` and `/corrections` response has `new_signs`. Highlight those signs in the sign list ("New sign!"), because they widen the child's vocabulary.
 - A Progress page that calls `GET /progress` (add `?speaker=<id>` for one parent):

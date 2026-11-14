@@ -30,6 +30,7 @@ class TranslateIn(BaseModel):
     # the speaker's tone, when the frontend knows it; otherwise the backend decides from the words and face
     emotion: Optional[Emotion] = None
     face_emotions: Optional[dict[str, float]] = None
+    loudness: Optional[float] = Field(None, ge=-1, le=1)  # parent's voice vs their own normal; sets intensity only
     speaker: Optional[str] = Field(None, pattern=r"^[a-z0-9-]{1,30}$")  # a family member id
 
 
@@ -74,7 +75,7 @@ def vocab():
 @app.post("/translate")
 def translate_route(body: TranslateIn):
     try:
-        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections())
+        result = translate(body.text, body.emotion, body.face_emotions, corrections=load_corrections(), loudness=body.loudness)
         known = [s["gloss"] for s in result["signs"] if s["known"]]
         result["new_signs"] = new_signs(known)
         try:

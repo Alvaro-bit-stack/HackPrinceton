@@ -34,7 +34,7 @@ def _sentence(s, **kw):
     try:
         return {"text": s, **translate(s, **kw)}
     except ValueError:  # a book line too long for /translate must not break the whole book
-        return {"text": s, "signs": [], "face": "statement", "emotion": "neutral", "meaning": s,
+        return {"text": s, "signs": [], "face": "statement", "emotion": "neutral", "intensity": 0.2, "tone_reason": "", "meaning": s,
                 "source": "fallback", "unsure": True}
 
 
@@ -72,7 +72,7 @@ def get_book(book_id, *, book_dir=BOOK_DIR, phrases=None):
     for s in book["sentences"]:
         # the bank is re-applied at read time so a new human-checked phrase beats an older model translation
         if s in cached and _key(s) not in phrases:
-            sentences.append(cached[s])
+            sentences.append({"intensity": 0.5, "tone_reason": "", **cached[s]})  # older caches lack the tone fields
         else:
             sentences.append(_sentence(s, phrases=phrases, offline=True))
     return {"id": book_id, "title": book["title"], "sentences": sentences}

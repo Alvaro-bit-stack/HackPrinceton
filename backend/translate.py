@@ -65,7 +65,7 @@ class _OutOfTime(Exception):
     pass
 
 
-def validate(text, emotion, face_emotions, meaning_hint):
+def validate(text, emotion, face_emotions, meaning_hint, loudness=None):
     if not isinstance(text, str) or not text.strip():
         raise ValueError("text must be a non-empty string")
     if len(text) > MAX_TEXT:
@@ -82,6 +82,8 @@ def validate(text, emotion, face_emotions, meaning_hint):
                 raise ValueError(f"face emotion score for {k!r} must be a number from 0 to 1")
     if meaning_hint is not None and (not isinstance(meaning_hint, str) or len(meaning_hint) > MAX_MEANING):
         raise ValueError(f"meaning_hint must be a string of at most {MAX_MEANING} characters")
+    if loudness is not None and (isinstance(loudness, bool) or not isinstance(loudness, (int, float)) or not -1 <= loudness <= 1):
+        raise ValueError("loudness must be a number from -1 to 1")
 
 
 def face_emotion(face_emotions):
@@ -93,6 +95,19 @@ def face_emotion(face_emotions):
         return None
     top = max(totals, key=totals.get)
     return None if top == "neutral" else (top, totals[top])
+
+
+def _intensity(emotion, loudness, face):
+    """Rule-based strength 0..1: louder voice and an agreeing strong face raise it."""
+    x = (0.2 if emotion == "neutral" else 0.5) + 0.3 * (loudness or 0)
+    if face and face[1] >= FACE_OVERRIDE and face[0] == emotion:
+        x += 0.15
+    return round(min(1.0, max(0.0, x)), 2)
+
+
+def _reason(decided, loudness):
+    voice = "voice louder than usual" if (loudness or 0) >= 0.3 else "voice quieter than usual" if (loudness or 0) <= -0.3 else ""
+    return f"emotion from {decided}" + (f"; {voice}" if voice else "")
 
 
 def validate_model_output(out):
@@ -131,12 +146,12 @@ def _nearest(text, phrases, n=4):
 
 
 def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phrases=None, model=None,
-              corrections=None, budget_seconds=45, offline=False):
-    """Returns {"signs": [{gloss, known}], "face", "emotion", "meaning", "source", "unsure"}.
+              corrections=None, budget_seconds=45, offline=False, loudness=None):
+    """Returns {"signs": [{gloss, known}], "face", "emotion", "intensity", "tone_reason", "meaning", "source", "unsure"}.
 
     offline=True never calls the model (phrase bank, then fallback); used when serving books.
     """
-    validate(text, emotion, face_emotions, meaning_hint)
+    validate(text, emotion, face_emotions, meaning_hint, loudness)
     phrases = PHRASES if phrases is None else phrases
     model = llm if model is None else model
     key = _key(text)
@@ -148,19 +163,29 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
     face = face_emotion(face_emotions)
     strong = face[0] if face and face[1] >= FACE_OVERRIDE else None
 
-    def result(signs, face_kind, emo, meaning, source, unsure):
-        return {"signs": _signs_out(signs), "face": face_kind, "emotion": emo, "meaning": meaning,
-                "source": source, "unsure": unsure}
+    def result(signs, face_kind, emo, meaning, source, unsure, decided="the model", tone=None):
+        intensity, reason = tone or (None, None)
+        if intensity is None:
+            intensity = _intensity(emo, loudness, face)
+        return {"signs": _signs_out(signs), "face": face_kind, "emotion": emo, "intensity": intensity,
+                "tone_reason": reason or _reason(decided, loudness), "meaning": meaning, "source": source, "unsure": unsure}
+
+    def decided_by(*named):  # what chose the emotion: the first set value, in the same order as the `or` chain
+        return next((n for v, n in named if v), "neutral default")
 
     hit = phrases.get(key)
     if hit and not meaning_hint:
         emo = emotion or strong or hit.get("emotion") or guess_emotion(text)
-        return result(hit["signs"], hit.get("face") or grammar_face(text), emo, hit.get("meaning") or text, "phrase-bank", False)
+        why = decided_by((emotion, "explicit emotion"), (strong, "strong face"), (hit.get("emotion"), "phrase bank"),
+                         (emo != "neutral", "keywords"))
+        return result(hit["signs"], hit.get("face") or grammar_face(text), emo, hit.get("meaning") or text, "phrase-bank", False, why)
 
     def fallback():
         # ponytail: word-for-word in English order with filler dropped. This is not ASL grammar.
         words = [w for w in re.findall(r"[a-z']+", text.lower()) if w not in FILLER]
-        r = result([], grammar_face(text), emotion or strong or guess_emotion(text), text, "fallback", True)
+        emo = emotion or strong or guess_emotion(text)
+        why = decided_by((emotion, "explicit emotion"), (strong, "strong face"), (emo != "neutral", "keywords"))
+        r = result([], grammar_face(text), emo, text, "fallback", True, why)
         r["signs"] = [{"gloss": WORD_TO_GLOSS.get(w, w.upper()), "known": w in WORD_TO_GLOSS} for w in words]
         return r
 
@@ -179,7 +204,7 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         for _ in range(2):  # one retry, telling the model what was wrong
             out = call(model.translate, sentence=text, face_emotions=face_emotions, emotion=emotion,
                        meaning_hint=meaning_hint, vocab=VOCAB, examples=_nearest(text, phrases),
-                       corrections=(corrections or [])[-10:], previous=previous)
+                       corrections=(corrections or [])[-10:], previous=previous, loudness=loudness)
             problems = validate_model_output(out)
             if not problems:
                 return dict(out)  # copy, since the emotion may be overwritten below
@@ -211,7 +236,11 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
         if best is None:
             return fallback()
         unsure = True
-    return result(best["signs"], best["face"], best["emotion"], best["meaning"], "model", unsure or bool(meaning_hint and hit))
+    i, r = best.get("intensity"), best.get("tone_reason")  # lenient: a bad value is replaced by the rule, never retried
+    tone = (round(i, 2) if isinstance(i, (int, float)) and not isinstance(i, bool) and 0 <= i <= 1 else None,
+            r if isinstance(r, str) and 0 < len(r) <= 200 else None)
+    return result(best["signs"], best["face"], best["emotion"], best["meaning"], "model", unsure or bool(meaning_hint and hit),
+                  "explicit emotion" if emotion else "the model", tone)
 
 
 if __name__ == "__main__":

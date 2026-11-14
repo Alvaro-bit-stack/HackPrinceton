@@ -47,8 +47,11 @@
     <option>neutral</option><option>happy</option><option>sad</option><option>angry</option><option>surprised</option><option>worried</option></select></label>
   <label>Speaker id <input id="speaker" placeholder="e.g. mom" size="10"></label>
   <label><input type="checkbox" id="sendFace" checked> send face scores</label>
+  <label><input type="checkbox" id="sendVoice" checked> send loudness</label>
+  <button id="resetVoice" title="Your next sentence becomes your normal speaking level">Reset my normal voice</button>
 </p>
 <p id="heard" class="muted"></p>
+<p id="voice" class="muted">Loudness: your first spoken sentence sets your normal level. Speak normally first.</p>
 
 <h2>What the signer gets</h2>
 <div id="result" class="muted">Nothing yet.</div>
@@ -97,13 +100,46 @@ function averageSamples() {
   return out;
 }
 
+// ---- voice loudness (relative to this speaker's normal; mics differ, so absolute volume means nothing) ----
+let audio = null, levels = [], baselineDb = null, lastLoudness = null;
+async function startLevels() {
+  levels = [];
+  try {
+    if (!audio) {
+      const ctx = new AudioContext();
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
+      ctx.createMediaStreamSource(mic).connect(analyser);
+      audio = { ctx, analyser, buf: new Float32Array(analyser.fftSize), timer: null };
+    }
+    await audio.ctx.resume();
+    if (!sampling || audio.timer) return; // released before the mic was ready: don't start an interval nobody stops
+    audio.timer = setInterval(() => {
+      audio.analyser.getFloatTimeDomainData(audio.buf);
+      let sum = 0; for (const x of audio.buf) sum += x * x;
+      const db = 10 * Math.log10(sum / audio.buf.length + 1e-12);
+      if (db > -55) levels.push(db); // ponytail: fixed noise gate; a noisy room counts as speech. Calibrate per room if it misfires.
+    }, 100);
+  } catch (e) { $("voice").innerHTML = `<span class="warn">Mic level not available: ${esc(e.message || e)}</span>`; }
+}
+function stopLevels() {
+  if (audio && audio.timer) { clearInterval(audio.timer); audio.timer = null; }
+  if (levels.length < 3) { lastLoudness = null; $("voice").textContent = "Loudness: not enough speech heard."; return null; }
+  const db = levels.reduce((a, b) => a + b, 0) / levels.length;
+  if (baselineDb === null) baselineDb = db;
+  lastLoudness = Math.max(-1, Math.min(1, Math.round((db - baselineDb) / 12 * 100) / 100)); // ~12 dB louder = "much louder"
+  $("voice").textContent = `Loudness: ${db.toFixed(1)} dB, your normal ${baselineDb.toFixed(1)} dB → ${lastLoudness >= 0 ? "+" : ""}${lastLoudness.toFixed(2)}`;
+  return lastLoudness;
+}
+$("resetVoice").onclick = () => { baselineDb = null; $("voice").textContent = "Loudness: your next spoken sentence sets your normal level."; };
+
 // ---- speech ----
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, finalText = "";
 if (!SR) { $("talk").disabled = true; $("talk").title = "Speech recognition not supported in this browser; type instead"; }
 function startTalk() {
   if (!SR || rec) return;
-  finalText = ""; samples = []; sampling = true;
+  finalText = ""; samples = []; sampling = true; startLevels();
   rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
   rec.onresult = (e) => {
     let interim = "";
@@ -113,7 +149,7 @@ function startTalk() {
     $("heard").textContent = "Heard: " + finalText + interim;
   };
   rec.onerror = (e) => { $("heard").innerHTML = `<span class="warn">Speech error: ${esc(e.error)}</span>`; };
-  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); if (finalText.trim()) send(finalText.trim(), averageSamples()); };
+  rec.onend = () => { rec = null; sampling = false; $("talk").classList.remove("on"); const loud = stopLevels(); if (finalText.trim()) send(finalText.trim(), averageSamples(), loud); };
   rec.start(); $("talk").classList.add("on");
 }
 const stopTalk = () => rec && rec.stop();
@@ -121,15 +157,16 @@ $("talk").addEventListener("pointerdown", startTalk);
 $("talk").addEventListener("pointerup", stopTalk);
 $("talk").addEventListener("pointerleave", stopTalk);
 $("text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest); // typed: use the face right now
+  if (e.key === "Enter" && $("text").value.trim()) send($("text").value.trim(), latest, null); // typed: use the face right now, no voice
 });
 
 // ---- backend ----
-async function send(text, face) {
+async function send(text, face, loudness) {
   const body = { text };
   if ($("emotion").value) body.emotion = $("emotion").value;
   if ($("speaker").value.trim()) body.speaker = $("speaker").value.trim();
   if (face && $("sendFace").checked) body.face_emotions = face;
+  if (loudness !== null && loudness !== undefined && $("sendVoice").checked) body.loudness = loudness;
   $("req").textContent = JSON.stringify(body, null, 2);
   $("result").textContent = "Translating… (the backend translates, then double-checks)";
   const t0 = performance.now();
@@ -139,10 +176,10 @@ async function send(text, face) {
     const ms = Math.round(performance.now() - t0);
     $("res").textContent = JSON.stringify(data, null, 2);
     if (!r.ok) { $("result").innerHTML = `<span class="warn">HTTP ${r.status}: ${esc(JSON.stringify(data.detail))}</span>`; return; }
-    show(data, ms, face);
+    show(data, ms, body);
   } catch (e) { $("result").innerHTML = `<span class="warn">Backend not reachable: ${esc(e.message)}</span>`; }
 }
-function show(d, ms, face) {
+function show(d, ms, sent) {
   const isNew = new Set(d.new_signs || []);
   const chips = d.signs.map((s) => `<span class="chip ${s.known ? "" : "fs"} ${isNew.has(s.gloss) ? "new" : ""}" title="${s.known ? "has a sign" : "fingerspell"}">${esc(s.gloss)}${s.known ? "" : " (FS)"}</span>`).join("");
   $("result").innerHTML = `
@@ -152,8 +189,11 @@ function show(d, ms, face) {
       <dt>Meaning (what the backend understood)</dt><dd>${esc(d.meaning)}</dd>
       <dt>Grammar face (eyebrows)</dt><dd>${esc(d.face)}</dd>
       <dt>Emotion (rest of face, movement)</dt><dd>${esc(d.emotion)}</dd>
+      <dt>Intensity (how big and sharp the signing is)</dt><dd>${d.intensity ?? "–"}${typeof d.intensity === "number" ? ` <span style="display:inline-block;vertical-align:middle;height:10px;width:${Math.round(d.intensity * 200)}px;background:#c62828;border-radius:3px"></span>` : ""}</dd>
+      <dt>Why this tone</dt><dd>${esc(d.tone_reason || "–")}</dd>
       <dt>Source</dt><dd>${esc(d.source)} ${d.unsure ? '<span class="warn">— unsure, don\'t trust it</span>' : "— passed its self-check"}</dd>
-      <dt>Face scores sent</dt><dd>${face && $("sendFace").checked ? esc(JSON.stringify(face)) : "none"}</dd>
+      <dt>Face scores sent</dt><dd>${sent.face_emotions ? esc(JSON.stringify(sent.face_emotions)) : "none"}</dd>
+      <dt>Loudness sent</dt><dd>${sent.loudness ?? "none"}</dd>
       <dt>Time</dt><dd>${ms} ms</dd>
     </dl>`;
 }
