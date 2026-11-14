@@ -19,13 +19,14 @@ Used by both the Speak page and the Storybook page.
 
 Request:
 ```json
-{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}}
+{"text": "you ate all of it", "emotion": "happy", "face_emotions": {"happy": 0.8, "surprised": 0.1}, "speaker": "mom"}
 ```
 | Field | Required | Rules |
 |---|---|---|
 | `text` | yes | 1 to 300 characters. |
 | `emotion` | no | One of `neutral`, `happy`, `sad`, `angry`, `surprised`, `worried`. Only send it when you know it for sure, for example after the parent picked it. It always wins. |
 | `face_emotions` | no | The parent's face while speaking, from face-api.js, averaged over the sentence. Keys must be among `neutral`, `happy`, `sad`, `angry`, `fearful`, `disgusted`, `surprised`; values 0 to 1. Leave it out when the camera is off or no face was seen. |
+| `speaker` | no | The family member talking: a member `id` from `/family`, such as `mom` (lowercase letters, digits and `-`, up to 30 characters). Used to keep a per-parent progress count. |
 
 Response:
 ```json
@@ -35,7 +36,8 @@ Response:
   "emotion": "happy",
   "meaning": "Praising the child for finishing their food",
   "source": "model",
-  "unsure": false
+  "unsure": false,
+  "new_signs": ["YOU"]
 }
 ```
 - `signs` is in signing order, not English word order.
@@ -49,6 +51,7 @@ Response:
   - `model`: written by the language model. `unsure` says whether it passed its self-check.
   - `fallback`: the model couldn't be reached, so this is a rough word-for-word version.
 - `unsure: true` means don't trust it: the self-check failed, the model timed out, `source` is `fallback`, or the parent corrected the meaning of a phrase-bank sentence. Show this to the parent.
+- `new_signs` lists the signs in this sentence the family has never used before. Highlight them: they widen the child's vocabulary. Every successful `/translate` is logged for `/progress`.
 - A request can take several seconds, because the backend translates and then double-checks. Show a loading state.
 
 Errors: invalid input returns HTTP 422. The `detail` field explains why. It is a string for checks the backend makes, such as length, and a list for checks FastAPI makes first, such as a wrong type or an `emotion` outside the six.
@@ -62,7 +65,7 @@ Request:
 - `meaning` (up to 300 characters) and `emotion` (one of the six) are optional, but send at least one.
 - A blank or whitespace-only `meaning` is treated as missing. With no emotion either, that is a 422.
 
-Response: a fresh translation in the same shape as `/translate`, with the correction applied. The correction is saved, so the same sentence uses it next time, and it is shown to the model as an example for other sentences.
+Response: a fresh translation in the same shape as `/translate` (including `new_signs`), with the correction applied. It isn't logged again for `/progress`. The correction is saved, so the same sentence uses it next time, and it is shown to the model as an example for other sentences.
 
 Parents correct meaning and emotion only. Corrections to the signs themselves go to a fluent signer, who adds them to the phrase bank.
 
@@ -99,6 +102,37 @@ Each frame is the 21 hand landmarks from MediaPipe for one hand.
 
 Response: `{"sign": "MILK", "confidence": 0.91}`
 `sign` is `null` when nothing is recognised.
+
+## GET /family  and  PUT /family  (family profile)
+```json
+{"child_name": "Maya", "child_age_months": 30,
+ "members": [{"id": "mom", "name": "Mom", "avatar": "pip-mom"}, {"id": "dad", "name": "Dad", "avatar": "pip-dad"}]}
+```
+- `PUT` replaces the whole profile and returns the saved version. `GET` returns it, or the empty default (`null`s and `[]`) before it's set.
+- `child_name` up to 60 characters. `child_age_months` a whole number 0 to 216.
+- Up to 8 `members`. `id` is 1 to 30 lowercase letters, digits and `-`, unique; `name` 1 to 40 characters; `avatar` is an avatar id the 3D signer knows (up to 40 characters, not checked), or `null`. Names are trimmed; a blank `child_name` or `avatar` is saved as `null`.
+- Invalid input returns 422.
+- The child's age never makes the translation simpler. It only decides which early signs show up in the catch-up list.
+
+## GET /progress  (catch-up, not cap)
+`GET /progress` for the whole family, or `GET /progress?speaker=mom` for one parent (then `signs_used`, `variety` and `catch_up` count only that parent's sentences). A `speaker` that isn't lowercase letters, digits and `-` (up to 30) returns 422.
+```json
+{
+  "child_age_months": 30,
+  "speaker": null,
+  "signs_used": ["MILK", "MORE", "EAT"],
+  "variety": {"this_week": 9, "last_week": 5},
+  "catch_up": {
+    "in_app": [{"gloss": "WATER", "entry": "water", "english": ["water"], "age_learned_months": 18}],
+    "not_yet_animated": [{"entry": "ball", "english": ["ball"], "age_learned_months": 16}]
+  }
+}
+```
+- `signs_used`: the different signs used so far, in first-used order. `variety`: different signs used in the last 7 days and the 7 before. Show it as "more signs than last week", not a score.
+- `catch_up`: signs children usually know by this age (ASL-LEX child vocabulary, learned at or before `child_age_months`) that this family hasn't used yet, earliest first. Up to 20 each. With no `child_age_months` set, every child-vocabulary sign counts. `age_learned_months` is a number and may come as `18.0`.
+  - `in_app`: the app can already sign it. Suggest it to the parent.
+  - `not_yet_animated`: no clip yet. Useful for the 3D signer's to-do list.
+- The goal is to help the parent catch up to rich, everyday signing, never to cap what the child sees.
 
 ## GET /vocab
 Returns `shared/vocab.json` as is.

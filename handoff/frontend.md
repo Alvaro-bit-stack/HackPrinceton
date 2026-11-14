@@ -103,11 +103,27 @@ When the camera is off, denied or sees no face, send nothing. The backend works 
 
 **Done when:** with the camera on, the request body includes `face_emotions`; with it off, the field is absent.
 
+### 6. Family settings and the speaker picker
+- A small settings screen that loads `GET /family` and saves with `PUT /family`: child's name, age in months, and the family members (name plus which avatar). Show 422 reasons.
+- On the Speak page, a "Who's talking?" picker with one button per member. Send the chosen member's `id` as `speaker` in `/translate`, and pass that member's `avatar` to `SignPlayer` as the `avatar` prop so the child sees that parent's signer.
+- Voice detection of who is talking is a stretch goal. Tap-to-pick is the demo.
+
+**Done when:** switching the picker changes the avatar and the `speaker` field in the request.
+
+### 7. Highlight new signs and the progress screen
+- Every `/translate` and `/corrections` response has `new_signs`. Highlight those signs in the sign list ("New sign!"), because they widen the child's vocabulary.
+- A Progress page that calls `GET /progress` (add `?speaker=<id>` for one parent):
+  - "You used N different signs this week (M last week)" from `variety`.
+  - "Signs to try next" from `catch_up.in_app`: each one tappable to see it signed.
+  - Keep the tone encouraging. Never show a grade or say the child is behind.
+
+**Done when:** a sign used for the first time is highlighted, and the Progress page shows the weekly count and the suggestions.
+
 ## Who owns what
 | File | Owner | Your role |
 |---|---|---|
 | `frontend/src/api.js`, `pages/*`, `styles.css` | You | Edit |
-| `frontend/src/components/SignPlayer.jsx` | Person 1 | Pass `signs`, `face`, `emotion`; don't edit |
+| `frontend/src/components/SignPlayer.jsx` | Person 1 | Pass `signs`, `face`, `emotion`, `avatar`; don't edit |
 | `frontend/src/lib/faceEmotion.js` | Person 1 | Import and call; don't edit |
 | `frontend/src/lib/speech.js` | Person 3 | Import; don't edit |
 
@@ -120,3 +136,5 @@ Start the backend without `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` set. Every tra
 - [ ] Meaning line and trust badge on the Speak page and every Storybook page.
 - [ ] Fix button calls `/corrections` and replaces the result.
 - [ ] Face scores are sent only when the camera is on and a face was seen.
+- [ ] Settings screen saves the family profile; the speaker picker sends `speaker` and switches the avatar.
+- [ ] `new_signs` are highlighted, and the Progress page shows `variety` and `catch_up.in_app`.

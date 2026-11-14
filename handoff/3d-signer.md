@@ -97,10 +97,18 @@ On a question, check whether the parent's own eyebrows went up and prompt them i
 The backend reads `shared/vocab.json` at startup and only ever returns glosses from it, plus `known: false` words to fingerspell.
 
 - **Only signs with a clip:** if a gloss is in the file but has no clip, the signer can't show it.
-- **What to animate next:** [`shared/next_signs.md`](../shared/next_signs.md) lists 517 signs from the ASL children's vocabulary checklist that we don't have yet, earliest-learned first. Each row gives the ASL-LEX handshape and location to check your clip against. Start at the top.
+- **What to animate next:** [`shared/next_signs.md`](../shared/next_signs.md) lists 517 signs from the ASL children's vocabulary checklist that we don't have yet, earliest-learned first. Each row gives the ASL-LEX handshape and location to check your clip against. Start at the top. `GET /progress` also lists, under `catch_up.not_yet_animated`, the early signs real families are missing, which is a good tie-breaker.
 - **Adding a sign:** record or capture the clip, then add `{"gloss": "BALL", "english": ["ball"], "asl_lex": "ball"}` to `vocab.json`, using the entry name from `next_signs.md` as `asl_lex`. Tell Person 3 and restart the backend. List every English word that should map to the sign, such as `"english": ["eat", "food", "hungry"]`.
 - **Removing a sign:** take it out of `vocab.json` too.
 - **Credit:** ASL-LEX is CC BY-NC, so its credit line stays in `next_signs.md` and the README. Its iconicity ratings, in `shared/asl_lex.json`, are a good teaching order for the Practice page.
+
+## Part 4: one avatar per family member
+The parent picks who is talking, so the child sees a signer that looks like that parent (for example "Mom" and "Dad" versions of Pip).
+
+- `SignPlayer` gets a new prop, `avatar`: a short id such as `pip-mom`, or `null`/`undefined` for the default signer (the backend sends `null` when a member has no avatar). Load `frontend/public/models/<avatar>.glb` and fall back to the default if the file is missing.
+- **Every avatar uses the same skeleton (bone names) and the same face shape keys.** Then every clip and every face/emotion setting plays on any avatar with no extra work. Change the look (hair, colours, glasses), not the rig.
+- Tell Person 2 the list of avatar ids so the settings screen can offer them. The backend stores the chosen id per family member and doesn't check it.
+- Two avatars are enough for the demo.
 
 ## Who owns what
 | File | Owner |
@@ -118,3 +126,4 @@ The backend reads `shared/vocab.json` at startup and only ever returns glosses f
 - [ ] Face and movement follow `emotion`, using the table as a starting point.
 - [ ] `faceEmotion.js` exports `startFaceEmotion` and `stopFaceEmotion`, returns the seven keys or `null`, and never sends video.
 - [ ] `vocab.json` lists only signs that have a clip.
+- [ ] `SignPlayer` takes an `avatar` prop; at least two avatars share one skeleton and one set of shape keys.

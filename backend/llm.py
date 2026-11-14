@@ -82,6 +82,7 @@ GRAMMAR_NOTES = """ASL grammar notes (a simplification, pending review by a flue
 
 TRANSLATE_SYSTEM = f"""You translate a hearing parent's English into ASL for their young deaf child.
 Use only the glosses in the allowed list below, plus FS:WORD for names and words with no sign.
+Never simplify for the child's age: sign the full meaning with the richest allowed signs, because a young child learns language by seeing complete, rich signing.
 
 {GRAMMAR_NOTES}
 
