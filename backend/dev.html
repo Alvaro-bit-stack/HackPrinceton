@@ -75,7 +75,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 // ---- camera + face scores ----
 let stream = null, loop = null, samples = [], sampling = false, latest = null, landmarker = null;
 let neutral = {}, calibrating = null; // per-movement baseline from "Record my neutral face"
-const GAIN = 2.2; // blendshape changes are small (0.1-0.5); scale before the rules
+const GAIN = 3; // blendshape changes from a neutral face are small (often 0.1-0.3); scale before the rules
 const avg = (b, ...names) => names.reduce((a, n) => a + (b[n] || 0), 0) / names.length;
 function cuesOf(raw) {
   const d = {};
@@ -107,7 +107,7 @@ function emotionsOf(c) {
     disgusted: clamp(0.45 * c.noseSneer + 0.3 * c.upperLipUp + 0.25 * c.browDown - 0.3 * c.smile),
     happy: clamp(0.65 * c.smile + 0.35 * c.cheekSquint),
   };
-  e.neutral = clamp(1 - 1.4 * Math.max(...Object.values(e)));
+  e.neutral = clamp(1 - 3 * Math.max(...Object.values(e))); // neutral only when nothing else is showing
   const total = Object.values(e).reduce((a, b) => a + b, 0) || 1; // same shape as before: 7 scores summing to 1
   for (const k in e) e[k] = Math.round(e[k] / total * 1000) / 1000;
   return e;
@@ -158,11 +158,19 @@ function drawBars(s, cues) {
   $("cues").innerHTML = "<b>Movements measured</b>" + ["browDown", "browInnerUp", "browOuterUp", "eyeSquint", "eyeWide", "mouthPress", "mouthFrown", "noseSneer", "smile", "jawOpen"]
     .map((k) => bar(k, cues[k], "#7b1fa2")).join("");
 }
+// Expressions are brief, so a plain average over the whole sentence washes them out: use each score's
+// 75th percentile across the frames (its strong moments), then renormalize to sum to 1.
 function averageSamples() {
   if (!samples.length) return null;
   const out = {};
-  for (const s of samples) for (const [k, v] of Object.entries(s)) out[k] = (out[k] || 0) + v / samples.length;
-  for (const k in out) out[k] = Math.round(out[k] * 1000) / 1000;
+  for (const k of Object.keys(samples[0])) {
+    if (k === "neutral") continue;
+    const v = samples.map((s) => s[k]).sort((a, b) => a - b);
+    out[k] = v[Math.min(v.length - 1, Math.floor(v.length * 0.75))];
+  }
+  out.neutral = Math.max(0, 1 - 3 * Math.max(...Object.values(out))); // same rule as per frame, so a brief frown still counts
+  const total = Object.values(out).reduce((a, b) => a + b, 0) || 1;
+  for (const k in out) out[k] = Math.round(out[k] / total * 1000) / 1000;
   return out;
 }
 
