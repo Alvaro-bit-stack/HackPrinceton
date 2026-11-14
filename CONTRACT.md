@@ -6,11 +6,12 @@ Agree on this once. Nobody changes a shape here without telling the other two.
 The list of signs the whole app knows. One entry per sign:
 
 ```json
-{"gloss": "MILK", "english": ["milk"]}
+{"gloss": "MILK", "english": ["milk"], "asl_lex": "milk"}
 ```
 
 - `gloss` is the sign's label, in capitals. It is the ID used everywhere.
 - `english` lists the spoken words that map to it.
+- `asl_lex` is the matching entry in ASL-LEX (`shared/asl_lex.json`), the sign dictionary we use for sign data. Every sign must have one.
 - A sign only counts as supported when the translator can produce it and the signer can show it.
 
 ## POST /translate  (the core: text in, signs out)

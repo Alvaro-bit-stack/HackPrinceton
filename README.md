@@ -78,3 +78,6 @@ The Practice page and `ml/recognizer.py` read a child's signs from the camera. T
 - Nobody on the team is Deaf or fluent in ASL. Sign choices and grammar need review by a Deaf signer.
 - Machine-signed ASL is weaker than a human signer. This is a bridge while the parent learns, not a replacement for signing with their child or for a human interpreter.
 - Only use original or public-domain text in `shared/books/`.
+
+## Credits
+Sign data from ASL-LEX 2.0 (Sehyr, Caselli, Cohen-Goldberg & Emmorey, 2021, https://asl-lex.org), licensed CC BY-NC 4.0.

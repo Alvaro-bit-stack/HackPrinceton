@@ -97,9 +97,10 @@ On a question, check whether the parent's own eyebrows went up and prompt them i
 The backend reads `shared/vocab.json` at startup and only ever returns glosses from it, plus `known: false` words to fingerspell.
 
 - **Only signs with a clip:** if a gloss is in the file but has no clip, the signer can't show it.
-- **Adding a sign:** record or capture the clip, add `{"gloss": "...", "english": ["...", "..."]}` to `vocab.json`, tell Person 3, and restart the backend. List every English word that should map to the sign, such as `"english": ["eat", "food", "hungry"]`.
+- **What to animate next:** [`shared/next_signs.md`](../shared/next_signs.md) lists 517 signs from the ASL children's vocabulary checklist that we don't have yet, earliest-learned first. Each row gives the ASL-LEX handshape and location to check your clip against. Start at the top.
+- **Adding a sign:** record or capture the clip, then add `{"gloss": "BALL", "english": ["ball"], "asl_lex": "ball"}` to `vocab.json`, using the entry name from `next_signs.md` as `asl_lex`. Tell Person 3 and restart the backend. List every English word that should map to the sign, such as `"english": ["eat", "food", "hungry"]`.
 - **Removing a sign:** take it out of `vocab.json` too.
-- **Growing the list:** ASL-LEX has 2,723 signs with frequency ratings and English translations for about a quarter of them. It's CC BY-NC, so credit it. Pick frequent, child-relevant signs first. Its iconicity ratings are a good teaching order for the Practice page.
+- **Credit:** ASL-LEX is CC BY-NC, so its credit line stays in `next_signs.md` and the README. Its iconicity ratings, in `shared/asl_lex.json`, are a good teaching order for the Practice page.
 
 ## Who owns what
 | File | Owner |

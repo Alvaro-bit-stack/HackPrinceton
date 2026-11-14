@@ -11,6 +11,7 @@ You own everything between the parent's words and the sign list: translating Eng
 | `backend/main.py` | The API routes in `CONTRACT.md`. |
 | `backend/tests.py` | Tests that run with a fake model: no key, no network. |
 | `shared/phrases.json` | The phrase bank of signer-checked translations. |
+| `backend/asl_lex.py`, `shared/asl_lex.json` | The ASL-LEX sign dictionary: import, lookup and the next-signs list. |
 | `shared/books/` | Book texts (`.txt`) and their saved translations (`.signs.json`). |
 | `frontend/src/lib/speech.js` | Speech-to-text in the browser. |
 
@@ -52,13 +53,44 @@ Parents correct meaning and emotion through `POST /corrections`. A correction to
 ## Run
 From the repo root:
 ```
-python -m backend.tests                          # 24 tests, no key needed
+python -m backend.tests                          # 25 tests, no key needed
+python -m backend.evaluate                       # accuracy on 24 parent sentences (needs a key)
 python -m backend.books build pips-morning       # translate a book once (needs a key)
 python -m backend.books build --all              # every book
 uvicorn backend.main:app --reload --port 8000    # the API
 ```
 
 The build command prints how many sentences came from the phrase bank, the model or the fallback, how many are unsure, and any words with no sign. Commit the `.signs.json` files it writes, so the storybook works offline at the demo.
+
+## ASL-LEX (sign dictionary)
+`shared/asl_lex.json` is a trimmed copy of ASL-LEX 2.0: 2,723 signs, each with how common it is, how much it looks like its meaning (iconicity), whether it's on the ASL children's vocabulary checklist, the age children learn it, and its handshape and location. It is a dictionary of single signs, separate from the phrase bank. It's used in three places:
+
+- **Linking:** every sign in `vocab.json` has an `asl_lex` field pointing at its entry. A test checks they all exist.
+- **What to animate next:** `shared/next_signs.md` lists the children's-checklist signs we don't have clips for yet, earliest-learned first.
+- **Spotting missing signs:** when a word is fingerspelled but ASL-LEX has a real sign for it, the book build report and `python -m backend.evaluate` list it under "real signs to animate next".
+
+To rebuild both files after a new ASL-LEX release or a `vocab.json` change, download the archive from https://osf.io/zpha4/ and run:
+```
+python -m backend.asl_lex import "path/to/Data Files/signdata.csv"
+```
+Credit: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://asl-lex.org, CC BY-NC 4.0. Non-commercial use only. The sign videos in the archive are not used.
+
+## Testing without the frontend
+There are three levels, from fastest to most realistic.
+
+1. **Logic tests (no key):** `python -m backend.tests` checks the pipeline rules with a fake model.
+2. **Try the API by hand.** Start the server with `uvicorn backend.main:app --reload --port 8000`, then open http://localhost:8000/docs. FastAPI's built-in page lists every route; pick one, click "Try it out", edit the JSON and click Execute. Or use curl:
+   ```
+   curl -s localhost:8000/translate -H "Content-Type: application/json" \
+     -d '{"text": "you ate all of it", "face_emotions": {"happy": 0.8, "surprised": 0.1}}'
+   curl -s localhost:8000/corrections -H "Content-Type: application/json" \
+     -d '{"text": "you ate all of it", "emotion": "surprised"}'
+   curl -s localhost:8000/books/pips-morning
+   ```
+3. **Measure accuracy:** `python -m backend.evaluate` runs the 24 parent sentences in `backend/eval_sentences.json` through the real model. For each sentence it checks the question type, the emotion and the key signs, and records how long it took. The summary includes the hour-16 pivot number: how many sentences came out fully signed in under 3 seconds. It also writes a review sheet for a fluent signer to `backend/data/` (git-ignored).
+   - `--offline` runs without the model, giving the word-for-word baseline to beat: 18/24 question types, 6/7 emotions, 25/28 key signs, 0 fully signed.
+   - Add sentences to `eval_sentences.json` as you find ones the app gets wrong.
+   - The script can't judge sign order or ASL grammar. That's what the signer's review sheet is for.
 
 ## Tasks
 1. **Get an API key and test one real request.** The provider code in `llm.py` hasn't been run against the real SDKs yet. Translate one sentence with the server running and check the response.

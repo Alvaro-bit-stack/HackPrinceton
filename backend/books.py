@@ -13,6 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from backend.asl_lex import has_sign
 from backend.translate import PHRASES, _key, translate
 
 BOOK_DIR = Path(__file__).parent.parent / "shared" / "books"
@@ -83,6 +84,9 @@ def _report(book_id, built):
     unknown = sorted({g["gloss"] for s in sents for g in s["signs"] if not g["known"]})
     print(f"{book_id}: {len(sents)} sentences, phrase-bank {count('phrase-bank')}, model {count('model')}, "
           f"fallback {count('fallback')}, unsure {sum(s['unsure'] for s in sents)}, unknown glosses {unknown or 'none'}")
+    animate = [g for g in unknown if has_sign(g)]
+    if animate:
+        print(f"  real ASL signs exist for {', '.join(animate)}: animate these next (see shared/next_signs.md)")
 
 
 def main(argv):
