@@ -113,7 +113,7 @@ def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_
     if face_emotions:
         parts.append(f"The parent's face emotion scores (0 to 1): {json.dumps(face_emotions)}. "
                      "The words decide the emotion when they carry intent. The face decides when the words are ambiguous "
-                     '(e.g. "you ate all of it"). A face that disagrees with clear words (a parent smiling while warning, '
+                     '(a sentence that could be praise or a scolding). A face that disagrees with clear words (a parent smiling while warning, '
                      "to soften it) does not change the emotion but can lower the intensity.")
     if face_frames:
         first = 2 if face_neutral else 1
@@ -125,7 +125,8 @@ def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_
                      "inner brows raised with wide or tense eyes mean worried; a smile with raised cheeks means happy; "
                      "brows up with eyes wide open means surprised. When the words are neutral or ambiguous, the face decides "
                      "the emotion, even when the expression is subtle. When the words clearly carry intent, the words decide "
-                     "which emotion and the face sets the intensity. Say what you saw in tone_reason.")
+                     "which emotion and the face sets the intensity. Never answer 'neutral' when the face clearly shows an emotion. "
+                     "Say what you saw in tone_reason.")
     if loudness is not None:
         parts.append(f"The parent's voice loudness relative to their normal: {loudness:+.2f} (-1 much quieter, 0 normal, +1 much louder). "
                      "Loudness tells how strong the feeling is, not which feeling.")

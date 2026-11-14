@@ -52,7 +52,7 @@ Response:
 - `emotion` is the feeling, one of the six above. It sets the rest of the face.
 - `intensity` (0 to 1) is how strong the feeling is: 0.2 calm, 0.5 clear, 0.8 or more very strong. It sets how big and sharp the signing and the face are. A firm warning is `angry` at low intensity; real anger is `angry` at high intensity.
 - `tone_reason` is one short line on which signals decided the emotion and intensity. Show it in testing tools; parents don't need it.
-- How the three tone signals combine: the words decide which emotion when they carry intent (a warning, praise, "be careful"); the face decides when the words are ambiguous ("you ate all of it"); a face that disagrees with clear words, such as smiling while warning, doesn't change the emotion but can soften the intensity; loudness and pitch raise or lower the intensity. An explicit `emotion` always wins.
+- How the three tone signals combine: the words decide which emotion when they carry intent (a warning, praise, "be careful"); the face decides when the words are ambiguous ("you ate all of it"); a face that disagrees with clear words, such as smiling while warning, doesn't change the emotion but can soften the intensity; loudness and pitch raise or lower the intensity. A neutral answer never overrides a strong face (one emotion scoring 0.6 or more in `face_emotions`): the face's emotion is used instead. An explicit `emotion` always wins.
 - `face` and `emotion` are separate on purpose. In ASL the eyebrows mark a question whatever the mood, so an angry question needs both.
 - `meaning` is one line on what the backend understood the parent to mean. Show it so the parent can correct it.
 - `source` says where the translation came from:

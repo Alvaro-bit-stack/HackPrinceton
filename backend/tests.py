@@ -169,7 +169,8 @@ def test_explicit_emotion_forced():
     m = FakeModel([dict(GOOD, emotion="happy")], [OK])
     r = T.translate("Do you want more milk?", "angry", {"happy": 0.9}, phrases={}, model=m)
     assert r["emotion"] == "angry" and m.t_calls[0]["emotion"] == "angry"
-    assert T.translate("x", phrases={}, model=FakeModel([GOOD], [OK]), face_emotions={"sad": 0.9})["emotion"] == "neutral"  # model decides
+    # a strong face beats a neutral model answer (GOOD says neutral)
+    assert T.translate("x", phrases={}, model=FakeModel([GOOD], [OK]), face_emotions={"sad": 0.9})["emotion"] == "sad"
 
 
 def test_loudness_validation():
@@ -204,6 +205,21 @@ def test_face_frames():
         assert cj.call_args.kwargs["images"] == []
         llm.translate(5, sentence="x", vocab=T.VOCAB, face_frames=[jpg], face_neutral=jpg)
         assert cj.call_args.kwargs["images"] == [jpg, jpg]
+
+
+def test_strong_face_beats_neutral_model():
+    m = FakeModel([dict(GOOD, emotion="neutral", tone_reason="words are plain")], [OK])
+    r = T.translate("you ate all of it", face_emotions={"angry": 0.67, "disgusted": 0.25}, phrases={}, model=m)
+    assert r["emotion"] == "angry" and "face clearly showed angry" in r["tone_reason"] and "words are plain" in r["tone_reason"]
+    m = FakeModel([dict(GOOD, emotion="neutral", intensity=0.3)], [OK])
+    r = T.translate("x", face_emotions={"angry": 0.67, "disgusted": 0.25}, loudness=0.99, phrases={}, model=m)
+    assert r["emotion"] == "angry" and r["intensity"] > 0.8  # loud + strong face, not the model's neutral 0.3
+    m = FakeModel([dict(GOOD, emotion="neutral")], [OK])  # weak face: the model's neutral stands
+    assert T.translate("x", face_emotions={"angry": 0.4, "neutral": 0.6}, phrases={}, model=m)["emotion"] == "neutral"
+    m = FakeModel([dict(GOOD, emotion="neutral")], [OK])  # the parent's explicit pick always wins
+    assert T.translate("x", "neutral", face_emotions={"angry": 0.9}, phrases={}, model=m)["emotion"] == "neutral"
+    m = FakeModel([dict(GOOD, emotion="happy")], [OK])  # a non-neutral model answer is kept (words can outrank the face)
+    assert T.translate("x", face_emotions={"angry": 0.9}, phrases={}, model=m)["emotion"] == "happy"
 
 
 def test_pitch():

@@ -266,6 +266,12 @@ def translate(text, emotion=None, face_emotions=None, meaning_hint=None, *, phra
     i, r = best.get("intensity"), best.get("tone_reason")  # lenient: a bad value is replaced by the rule, never retried
     tone = (round(i, 2) if isinstance(i, (int, float)) and not isinstance(i, bool) and 0 <= i <= 1 else None,
             r if isinstance(r, str) and 0 < len(r) <= 200 else None)
+    if not emotion and strong and best["emotion"] == "neutral":
+        # mirror of "a neutral face never overrides": a neutral reading never overrides a strong face
+        best["emotion"] = strong
+        why = f"face clearly showed {strong}, so not neutral" + (f"; model said: {tone[1]}" if tone[1] else "")
+        rule = _intensity(strong, loudness, face, pitch)  # the model's intensity was for "neutral", so don't let it cap this
+        tone = (max(tone[0] or 0, rule), why[:200])
     return result(best["signs"], best["face"], best["emotion"], best["meaning"], "model", unsure or bool(meaning_hint and hit),
                   "explicit emotion" if emotion else "the model", tone)
 
