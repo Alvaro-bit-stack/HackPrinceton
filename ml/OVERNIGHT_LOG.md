@@ -23,7 +23,7 @@ _(Summary will be written here at the end of the run.)_
 - Python code that downloads data calls `truststore.inject_into_ssl()` for the same reason.
 - Installed into `ml/.venv`: torch 2.15.0+cpu, numpy 2.4.6, scikit-learn 1.9.1, mediapipe 1.2.3, opencv-python-headless, pandas, pyarrow, requests, huggingface_hub, truststore.
 
-### 2026-11-14 00:20 Phase 1: dataset search
+### 2026-11-14 00:10 Phase 1: dataset search
 - Local data in `ml/`: none (no `templates.json`, no `ml/data/`).
 - Google ISLR (Kaggle "asl-signs"): **not used**. Needs Kaggle login + accepting competition rules; no credentials on this machine. Also covers only ~7 of the 15 vocab signs (no MORE, HELP, WANT, YOU, ME, LOVE, WHAT, PLAY).
 - WLASL: videos are mostly YouTube links (many dead) and would need MediaPipe extraction; not needed given the option below.
@@ -37,7 +37,7 @@ _(Summary will be written here at the end of the run.)_
   - `EAT` uses only the EAT sign; `SLEEP` only SLEEP. HUNGRY, THIRSTY, TIRED, BED are different signs and are used as **hard negatives**, not positives.
 - Negatives ("not a vocab sign"): the 17 hard-negative glosses (where present) + 70 random other glosses (seed 0). Used as an `_OTHER` class and to measure false accepts.
 
-### 2026-11-14 00:30 Phase 1: format checks and design decisions
+### 2026-11-14 00:14 Phase 1: format checks and design decisions
 - `.pose` stores x*width, y*height, raw z. `data_prep.py` divides back by width/height, so cached landmarks are exactly what MediaPipe JS returns in the browser (normalised image coords).
 - Read (not edited) `frontend/src/components/Webcam.jsx` + `handTracker.js`: the browser sends `hands[0]` of each frame (can flip between left and right hand) in a rolling **15-frame window** (~0.25-0.5 s at display rate). A full sign is ~1-1.5 s. See "Requested changes outside ml/".
 - `normalize()` puts the wrist at the origin per frame, which erases the hand's travel path. Kept `normalize()` unchanged and added 3 per-frame features computed the same way at train and inference time: wrist path relative to the clip's mean position, divided by median hand size (2), and log of hand size relative to its median (1, toward/away from camera). Still invariant to where the hand is and how big it is.
@@ -46,3 +46,37 @@ _(Summary will be written here at the end of the run.)_
 - Inference runs in **pure numpy** (`model.npz`) because `backend/requirements.txt` has no torch and I can't edit it. Torch is only needed for training.
 - `recognizer.py` rewritten: same `normalize`, `load_templates`, `add_template`, `predict(frames, templates=None)`. Added input sanitising, hand-switch cleanup (`keep_one_hand`), `sequence_features`, numpy CNN inference, template fallback. Self-check extended (edge cases + movement-only pair: last-frame baseline 0/8, sequence features 8/8). Passes.
 - `data_prep.py` started: 3432 clips (vocab + 86 negative glosses), 12 threads, resumable.
+- `2026-11-14 00:20` [train.py] data: 1571 train / 435 val clips, 16 classes (257 / 75 are vocab signs)
+- `2026-11-14 00:20` [train.py] A: last-frame NN (original): val closed-set acc 0.200; threshold 0.64 -> precision 0.500, coverage 0.013 (0s)
+- `2026-11-14 00:20` [train.py] B1: sequence 5-NN: val closed-set acc 0.667; threshold 0.81 -> precision 1.000, coverage 0.027 (9s)
+- `2026-11-14 00:21` [train.py] B2: sequence 1-NN DTW: val closed-set acc 0.787; threshold 0.50 -> precision 1.000, coverage 0.040 (42s)
+- `2026-11-14 00:21` [train.py] Model C `small` {'width': 64, 'dilations': (1, 2), 'dropout': 0.2, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 3/3, val_acc 0.427, val_loss 1.599, 4s
+- `2026-11-14 00:21` [train.py] chosen config: `small` (val_acc 0.427)
+- `2026-11-14 00:21` [train.py] WARNING: no threshold reached 90% validation precision; using the most precise one (0.95)
+- `2026-11-14 00:21` [train.py] temperature 0.40 (val NLL 1.144); MIN_CONFIDENCE 0.95 -> val precision 0.500, coverage 0.027, false accepts on non-vocab 0.006
+- `2026-11-14 00:21` [train.py] exported data\smoke_model.npz (238 KB); numpy vs torch max prob diff 5.66e-07
+- `2026-11-14 00:21` [train.py] done; summary in results/train_summary.json
+
+### 2026-11-14 00:21 Phase 1 done, Phase 2 started (section times before this were estimates; from here they come from the clock)
+- data_prep.py finished: 3419 clips kept, 13 skipped (no hand detected in >=4 frames), 0 download errors. Per sign only ~28-61 clips (train 10-29, val 3-7, test 10-26): the HF repo's file count included anonymised duplicates. Details in `data_report.md`.
+- Smoke test (3 epochs, output to data/smoke_model.npz) passed: numpy export matches torch (max prob diff 6e-7). Lines tagged [train.py] directly above/below with 'small ... best epoch 3/3' are from this smoke run.
+- Decision: precision is computed with non-vocab clips re-weighted to equal the vocab clips in total (val has ~5x more non-vocab clips than vocab clips, which is far more 'random gesturing' than the Learn page produces). Unweighted and vocab-only precision are reported too.
+
+- `2026-11-14 00:21` [train.py] data: 1571 train / 435 val clips, 16 classes (257 / 75 are vocab signs)
+- `2026-11-14 00:21` [train.py] A: last-frame NN (original): val closed-set acc 0.200; threshold 0.64 -> precision 0.828, coverage 0.013 (0s)
+- `2026-11-14 00:22` [train.py] B1: sequence 5-NN: val closed-set acc 0.667; threshold 0.81 -> precision 1.000, coverage 0.027 (9s)
+- `2026-11-14 00:22` [train.py] B2: sequence 1-NN DTW: val closed-set acc 0.787; threshold 0.45 -> precision 0.918, coverage 0.093 (46s)
+- `2026-11-14 00:24` [train.py] Model C `base` {'width': 96, 'dilations': (1, 2, 4), 'dropout': 0.3, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 40/70, val_acc 0.933, val_loss 0.358, 121s
+- `2026-11-14 00:26` [train.py] Model C `small` {'width': 64, 'dilations': (1, 2), 'dropout': 0.2, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 18/48, val_acc 0.960, val_loss 0.671, 69s
+- `2026-11-14 00:27` [train.py] Model C `wide` {'width': 128, 'dilations': (1, 2, 4), 'dropout': 0.4, 'lr': 0.0015, 'weight_decay': 0.003}: best epoch 21/51, val_acc 0.933, val_loss 0.583, 96s
+- `2026-11-14 00:27` [train.py] chosen config: `small` (val_acc 0.960)
+- `2026-11-14 00:27` [train.py] temperature 0.69 (val NLL 0.609); MIN_CONFIDENCE 0.72 -> val precision 0.908, coverage 0.800, false accepts on non-vocab 0.067
+- `2026-11-14 00:27` [train.py] exported C:\Users\evan\Downloads\HackPrinceton\ml\model.npz (239 KB); numpy vs torch max prob diff 6.56e-07
+- `2026-11-14 00:27` [train.py] done; summary in results/train_summary.json
+
+### 2026-11-14 00:29 Run 1 (ASL Citizen only) result
+- Lines above (00:21-00:27): Model C beats both baselines on validation (top-1 96% vs DTW 79% vs original last-frame 20%). Chosen config `small` (64 channels, dilations 1,2; 22k params, 239 KB file).
+- Caveat: validation has only 75 vocab clips (3-7 per sign), so +-1 clip moves per-sign accuracy a lot and picking the best epoch on it is optimistic. The test split will tell.
+- `python ml/recognizer.py` passes with the model, both in ml/.venv and in the system Python (numpy only, no torch): 15/15 reference clips, movement-only pair, edge cases.
+- Added WLASL (Voxel51/WLASL on HF, C-UDA license, academic use only) as extra *training* data: `wlasl_prep.py` extracted 132 clips (5-14 per sign, 4-11 signers per sign) with MediaPipe HandLandmarker (same model as the browser), 0 skipped. Val/test stay ASL Citizen only. Next: run 2 = same sweep with WLASL added; pick between run 1 and run 2 on the same validation set.
+
