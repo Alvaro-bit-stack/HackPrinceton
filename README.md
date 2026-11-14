@@ -38,6 +38,8 @@ Either way both pages ship. The decision is which one opens the pitch.
 
 Shared by all three: [CONTRACT.md](CONTRACT.md) and `shared/vocab.json`.
 
+If you use Claude Code, `CLAUDE.md` and `.claude/` set up a team of helper agents (cheap ones for searches, stronger ones for reviews). Opening the repo in Claude Code makes Sonnet the main model.
+
 ## Avoiding merge conflicts
 - Edit only your own files. If you need a change in someone else's file, ask them.
 - Changes to `CONTRACT.md` or `shared/vocab.json` are announced to the other two before they are pushed.
@@ -65,7 +67,8 @@ Then open http://localhost:5173. Use Chrome, since speech recognition needs it.
 The starter is wired end to end with simple stand-ins, so each person can replace their part without waiting:
 - **Speak page:** type or speak a sentence and see the sign list and the face cue.
 - **Storybook page:** reads `shared/books/pips-morning.txt`, a short original story, one sentence per page.
-- **Translation:** tags an emotion from keywords, checks the phrase bank (empty for now), then maps words to signs one for one. It is not ASL grammar yet.
+- **Translation:** the full pipeline is built: phrase bank, language model, self-check and fallback. With an API key it translates into ASL order with emotion and meaning; without one it falls back to word-for-word and marks the result unsure. See [backend/README.md](backend/README.md).
+- **Handoff notes:** what the frontend and the signer need to change for the new backend is in [handoff/](handoff/).
 - **Signer:** shows each sign as a word on a card until the 3D signer or video clips go in.
 
 ## Stretch: child to parent
