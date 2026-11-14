@@ -351,6 +351,32 @@ def test_evaluate():
         assert "signer_review" in path.read_text(encoding="utf-8").splitlines()[0]
 
 
+def test_asl_lex():
+    from backend import asl_lex as A
+    with tempfile.TemporaryDirectory() as d:
+        src = Path(d, "signdata.csv")
+        cols = ["EntryID", "LemmaID", "SignFrequency(M)", "Iconicity(M)", "InCDI", "CDISemanticCategory", "bglm_aoa",
+                "DominantTranslation", "NondominantTranslations", "Handshape.2.0", "MajorLocation.2.0", "MinorLocation.2.0"]
+        rows = [["eat_1", "eat", "6.84", "6.1", "Yes", "Action Signs", "20", "", "", "flat_o", "Head", "Mouth"],
+                ["eat_2", "eat", "6.68", "5.9", "No", "", "", "", "", "o", "Head", "Mouth"],
+                ["ball", "ball", "4.63", "", "Yes", "Toys", "19", "", "", "curved_5", "Neutral", "Neutral"],
+                ["hungry", "hungry", "5.77", "3.13", "Yes", "Descriptive Signs", "29", "hungry", "hunger, wish", "c", "Body", "TorsoTop"]]
+        src.write_text("\n".join(",".join(f'"{c}"' for c in r) for r in [cols, *rows]) + "\n", encoding="utf-8")
+        entries = A.import_csv(src)
+        assert entries[0]["english"] == ["eat"] and entries[0]["child_vocab"] is True and entries[2]["iconicity"] is None
+        assert entries[3]["english"] == ["hungry", "hunger", "wish"] and entries[0]["location"] == "Head / Mouth"
+        todo = A.write_files(entries, [{"gloss": "EAT", "asl_lex": "eat_1"}], Path(d, "lex.json"), Path(d, "next.md"))
+        assert todo == 2  # ball and hungry; eat_1 is already in vocab, eat_2 isn't child vocabulary
+        md = Path(d, "next.md").read_text(encoding="utf-8")
+        assert md.index("| ball |") < md.index("| hungry |") and "CC BY-NC" in md  # earliest-learned first, credited
+        index = A.load(Path(d, "lex.json"))
+        assert A.has_sign("EAT", index) == "eat_1" and A.has_sign("hunger", index) == "hungry" and A.has_sign("pizza", index) is None
+    # every sign in vocab.json is linked to a real ASL-LEX entry
+    if A.LEX.exists():
+        entries = {e["entry"] for e in json.loads(A.LEX.read_text(encoding="utf-8"))["signs"]}
+        assert all(v["asl_lex"] in entries for v in T.VOCAB), [v["gloss"] for v in T.VOCAB if v["asl_lex"] not in entries]
+
+
 def run():
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f)]
     failed = 0

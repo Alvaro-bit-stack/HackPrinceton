@@ -11,6 +11,7 @@ You own everything between the parent's words and the sign list: translating Eng
 | `backend/main.py` | The API routes in `CONTRACT.md`. |
 | `backend/tests.py` | Tests that run with a fake model: no key, no network. |
 | `shared/phrases.json` | The phrase bank of signer-checked translations. |
+| `backend/asl_lex.py`, `shared/asl_lex.json` | The ASL-LEX sign dictionary: import, lookup and the next-signs list. |
 | `shared/books/` | Book texts (`.txt`) and their saved translations (`.signs.json`). |
 | `frontend/src/lib/speech.js` | Speech-to-text in the browser. |
 
@@ -60,6 +61,19 @@ uvicorn backend.main:app --reload --port 8000    # the API
 ```
 
 The build command prints how many sentences came from the phrase bank, the model or the fallback, how many are unsure, and any words with no sign. Commit the `.signs.json` files it writes, so the storybook works offline at the demo.
+
+## ASL-LEX (sign dictionary)
+`shared/asl_lex.json` is a trimmed copy of ASL-LEX 2.0: 2,723 signs, each with how common it is, how much it looks like its meaning (iconicity), whether it's on the ASL children's vocabulary checklist, the age children learn it, and its handshape and location. It is a dictionary of single signs, separate from the phrase bank. It's used in three places:
+
+- **Linking:** every sign in `vocab.json` has an `asl_lex` field pointing at its entry. A test checks they all exist.
+- **What to animate next:** `shared/next_signs.md` lists the children's-checklist signs we don't have clips for yet, earliest-learned first.
+- **Spotting missing signs:** when a word is fingerspelled but ASL-LEX has a real sign for it, the book build report and `python -m backend.evaluate` list it under "real signs to animate next".
+
+To rebuild both files after a new ASL-LEX release or a `vocab.json` change, download the archive from https://osf.io/zpha4/ and run:
+```
+python -m backend.asl_lex import "path/to/Data Files/signdata.csv"
+```
+Credit: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://asl-lex.org, CC BY-NC 4.0. Non-commercial use only. The sign videos in the archive are not used.
 
 ## Testing without the frontend
 There are three levels, from fastest to most realistic.

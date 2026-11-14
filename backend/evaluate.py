@@ -15,6 +15,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from backend.asl_lex import has_sign
 from backend.translate import translate
 
 HERE = Path(__file__).parent
@@ -43,6 +44,7 @@ def evaluate(sentences, **translate_kw):
             "expected_signs": len(expect.get("signs", [])),
             "missing_signs": " ".join(g for g in expect.get("signs", []) if g not in glosses),
             "fingerspelled": len(fingerspelled),
+            "animate_next": " ".join(g for g in fingerspelled if has_sign(g)),  # a real sign exists, we lack the clip
             "fully_signed": not r["unsure"] and not fingerspelled,
             "source": r["source"],
             "unsure": r["unsure"],
@@ -68,6 +70,7 @@ def summarize(rows):
         "emotion correct": rate("emotion_ok"),
         "key signs present": f"{expected - missing}/{expected}",
         "fully signed": sum(r["fully_signed"] for r in rows),
+        "real signs to animate next": " ".join(sorted({g for r in rows for g in r["animate_next"].split()})) or "none",
         "fully signed in under 3 s (pivot test)": sum(r["fully_signed"] and r["seconds"] < FAST_SECONDS for r in rows),
         "average seconds": round(sum(times) / len(times), 2),
         "slowest seconds": max(times),
