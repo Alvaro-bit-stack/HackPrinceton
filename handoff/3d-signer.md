@@ -117,11 +117,19 @@ A kid in a plain T-shirt, ready for three.js:
 - **One clip, `YOU_WANT_MORE_MILK`** (126 frames at 24 fps): YOU, WANT, MORE, MILK with English mouthing and raised question brows. It's a whole sentence, a sample of quality, not per-sign clips yet.
 - Made in Blender by hand, not from motion capture: have a fluent signer check it.
 
+## The glasses signer (`signer_glasses.glb`)
+A kid with glasses and a blue T-shirt, built from a Meshy T-pose model (about 25k triangles, 5.8 MB, JPEG textures):
+- **Skeleton and face:** the same 43 bone names and the same 20 morph targets as `signer_tshirt.glb`, so clips and face settings carry over. The rest pose is a T-pose, not arms-down, so a clip made on another avatar needs its arm rotations redone.
+- **Hands:** the arms are the model's own; the hands are replaced from the wrist with five-finger hands in a flat skin colour.
+- **Face:** eyelids sit behind the glasses. Smile and frown bend a painted lip line, so they stay modest.
+- **One clip, `YOU_WANT_MILK`** (100 frames at 24 fps): YOU, WANT, MILK with English mouthing, raised question brows and a forward head tilt, right hand dominant.
+- Made in Blender by hand, not from motion capture: have a fluent signer check it.
+
 ## Who owns what
 | File | Owner |
 |---|---|
 | `frontend/src/components/SignPlayer.jsx` | You |
-| `frontend/public/models/` (`pip.glb`, `signer.glb`, `signer_tshirt.glb`, clips) | You |
+| `frontend/public/models/` (`pip.glb`, `signer.glb`, `signer_tshirt.glb`, `signer_glasses.glb`, clips) | You |
 | `frontend/src/lib/faceEmotion.js` (new) | You |
 | `shared/vocab.json` | Shared: you add signs, and tell Person 3 |
 | `frontend/src/pages/*` | Person 2, who calls your functions and passes your props |
