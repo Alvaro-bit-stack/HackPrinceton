@@ -1,0 +1,21 @@
+# Local environment and caches (kept inside ml/)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.cache/
+
+# Datasets, raw videos, extracted landmarks
+data/
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mkv
+*.parquet
+*.zip
+*.tar
+*.tar.gz
+
+# Per-epoch training checkpoints (only the final small model is committed)
+checkpoints/
