@@ -110,11 +110,18 @@ The parent picks who is talking, so the child sees a signer that looks like that
 - Tell Person 2 the list of avatar ids so the settings screen can offer them. The backend stores the chosen id per family member and doesn't check it.
 - Two avatars are enough for the demo.
 
+## The T-shirt signer (`signer_tshirt.glb`)
+A kid in a plain T-shirt, ready for three.js:
+- **Skeleton:** 43 bones, including every finger joint (`RightIndexProximal`…), the same names as `pip.glb`.
+- **Face:** 20 morph targets with the names in Part 1 (`browInnerUp`, `browDownLeft`, `jawOpen`, `mouthPucker`, `mouthFunnel`, `mouthSmileLeft`, `eyeBlinkLeft`…). The closed mouth shows as a thin dark lip line.
+- **One clip, `YOU_WANT_MORE_MILK`** (126 frames at 24 fps): YOU, WANT, MORE, MILK with English mouthing and raised question brows. It's a whole sentence, a sample of quality, not per-sign clips yet.
+- Made in Blender by hand, not from motion capture: have a fluent signer check it.
+
 ## Who owns what
 | File | Owner |
 |---|---|
 | `frontend/src/components/SignPlayer.jsx` | You |
-| `frontend/public/models/` (`pip.glb`, `signer.glb`, clips) | You |
+| `frontend/public/models/` (`pip.glb`, `signer.glb`, `signer_tshirt.glb`, clips) | You |
 | `frontend/src/lib/faceEmotion.js` (new) | You |
 | `shared/vocab.json` | Shared: you add signs, and tell Person 3 |
 | `frontend/src/pages/*` | Person 2, who calls your functions and passes your props |
