@@ -1,27 +1,31 @@
-# ml: sign recognition (Person 1)
+# Signer and ML (Person 1)
 
-Turns the child's signing into a word. The camera runs in the browser, so your work spans two files:
+You own the signing itself: given an ordered list of signs, a grammar face and an emotion, show a signer performing them.
 
 | File | What it does |
 |---|---|
-| `ml/recognizer.py` | `predict(frames)` returns `{sign, confidence}`. The backend calls this. |
-| `frontend/src/lib/handTracker.js` | Runs MediaPipe in the browser and yields hand landmarks. |
+| `frontend/src/components/SignPlayer.jsx` | Takes `signs`, `face` and `emotion` and shows the signing. Currently words on cards. |
+| `frontend/public/models/` | The 3D signer (`signer.glb`) and any sign clips. |
+| `ml/` | Scripts for capturing sign motion, plus the stretch recogniser. |
 
-Nobody else edits these two files, and you don't need to edit anything else.
+Nobody else edits these.
 
 ## Tasks
-1. Get `handTracker.js` logging 21 landmarks per hand from the webcam.
-2. Record templates for two signs (`add_template`) and check `predict` tells them apart.
-3. Pick the first 10 signs from `shared/vocab.json` that differ by handshape and record them with all three teammates.
-4. Find a dataset or pretrained model for signs that differ by movement, and replace the baseline.
-5. Measure accuracy: for each sign, how often is it right across people and lighting? Put the table here.
+1. Load `signer.glb` in `SignPlayer.jsx` with three.js and play its built-in demo animation.
+2. Build the sign library: one motion per gloss in `shared/vocab.json`. Capture each from a video of a real signer with MediaPipe and save the joint rotations.
+3. Play a sign list in order, blending the end of one sign into the start of the next.
+4. Drive the face from the `face` tag: raised brows for `yes-no-question`, lowered for `wh-question`. The model already has these brow controls.
+5. Show the `emotion` tag on the signer: the rest of the face, and how large or sharp the movement is. Keep it separate from the eyebrow grammar in task 4, since an angry question needs both.
+6. Handle `known: false` words: fingerspell them, or show the word as text if the alphabet isn't ready.
+7. Before the hour-16 check-in, report how many glosses have a motion. That number drives the pivot decision.
 
-## Run
+## Fallback
+If driving the 3D signer stalls, play one short video clip per sign instead. The rest of the app doesn't change, because `SignPlayer` takes the same inputs.
+
+## Stretch: recognising the child's signs
+`ml/recognizer.py` and `frontend/src/lib/handTracker.js` read signs from the camera for the Practice page. They are a working starter. Leave them until the main goal or the pivot demos cleanly.
+
 ```
 pip install numpy
 python ml/recognizer.py     # self-check
 ```
-
-## Notes
-- The baseline reads handshape from one frame. It cannot tell apart signs that differ only by movement or location.
-- Output goes to parents as a hint, never as "correct" or "wrong". Keep `MIN_CONFIDENCE` high enough that wrong guesses are rare.

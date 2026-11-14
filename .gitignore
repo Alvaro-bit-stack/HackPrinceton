@@ -7,3 +7,4 @@ __pycache__/
 *.blend1
 ml/data/
 ml/models/*.bin
+backend/data/
