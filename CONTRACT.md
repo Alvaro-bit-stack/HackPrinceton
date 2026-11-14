@@ -11,9 +11,11 @@ The list of signs the whole app knows. One entry per sign:
 
 - `gloss` is the sign's label, in capitals. It is the ID used everywhere.
 - `english` lists the spoken words that map to it.
-- A sign only counts as supported when all three parts handle it: the recogniser can detect it, the translator can produce it, and the player can show it.
+- A sign only counts as supported when the translator can produce it and the signer can show it.
 
-## POST /translate  (parent speaks, app signs)
+## POST /translate  (the core: text in, signs out)
+Used by both the Speak page and the Storybook page.
+
 Request: `{"text": "do you want more milk?"}`
 
 Response:
@@ -27,7 +29,22 @@ Response:
 - `known: false` means there is no sign for that word, so the player fingerspells it.
 - `face` is one of `statement`, `yes-no-question`, `wh-question`. The player uses it for the eyebrows, and the app shows the parent the matching cue.
 
-## POST /recognize  (child signs, app reads)
+## GET /books  and  GET /books/{id}  (storybook pivot)
+`GET /books` returns `[{"id": "pips-morning", "title": "Pip's Morning"}]`.
+
+`GET /books/{id}` returns the book with every sentence already translated:
+```json
+{
+  "id": "pips-morning",
+  "title": "Pip's Morning",
+  "sentences": [{"text": "More milk?", "signs": [{"gloss": "MORE", "known": true}], "face": "yes-no-question"}]
+}
+```
+Each sentence has the same `signs` and `face` fields as `/translate`. An unknown id returns 404.
+
+A book is a `.txt` file in `shared/books/`: the first line is the title, then one sentence per line.
+
+## POST /recognize  (stretch: child signs, app reads)
 Request: `{"frames": [[[x, y, z], ... 21 points], ... one entry per video frame]}`
 Each frame is the 21 hand landmarks from MediaPipe for one hand.
 

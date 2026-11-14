@@ -1,11 +1,12 @@
 import { useState } from "react";
 import Translator from "./pages/Translator.jsx";
+import Storybook from "./pages/Storybook.jsx";
 import Learn from "./pages/Learn.jsx";
 
-const PAGES = { Translate: Translator, Learn };
+const PAGES = { Speak: Translator, Storybook, Practice: Learn };
 
 export default function App() {
-  const [page, setPage] = useState("Translate");
+  const [page, setPage] = useState("Speak");
   const Page = PAGES[page];
   return (
     <>

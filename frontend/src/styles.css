@@ -10,3 +10,4 @@ input { font: inherit; padding: 8px; width: 60%; margin-right: 8px; }
 .cue { font-size: 1.2rem; color: #1d4f91; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .webcam { width: 100%; border-radius: 10px; transform: scaleX(-1); background: #000; }
+.story-text { font-size: 1.6rem; }

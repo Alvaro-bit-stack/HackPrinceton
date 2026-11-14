@@ -14,3 +14,5 @@ async function post(path, body) {
 export const translate = (text) => post("/translate", { text });
 export const recognize = (frames) => post("/recognize", { frames });
 export const getVocab = () => fetch(BASE + "/vocab").then((r) => r.json());
+export const getBooks = () => fetch(BASE + "/books").then((r) => r.json());
+export const getBook = (id) => fetch(`${BASE}/books/${encodeURIComponent(id)}`).then((r) => r.json());

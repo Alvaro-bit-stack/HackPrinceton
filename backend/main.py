@@ -2,10 +2,11 @@
 
 Run from the repo root:  uvicorn backend.main:app --reload --port 8000
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from backend.books import get_book, list_books
 from backend.translate import VOCAB, translate
 from ml.recognizer import predict
 
@@ -34,6 +35,19 @@ def vocab():
 @app.post("/translate")
 def translate_route(body: TranslateIn):
     return translate(body.text)
+
+
+@app.get("/books")
+def books_route():
+    return list_books()
+
+
+@app.get("/books/{book_id}")
+def book_route(book_id: str):
+    book = get_book(book_id)
+    if book is None:
+        raise HTTPException(status_code=404, detail="No book with that id")
+    return book
 
 
 @app.post("/recognize")
