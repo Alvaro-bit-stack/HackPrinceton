@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from backend.books import get_book, list_books
+from typing import Literal
+
 from backend.translate import VOCAB, translate
 from ml.recognizer import predict
 
@@ -16,6 +18,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allo
 
 class TranslateIn(BaseModel):
     text: str
+    # the speaker's tone, when the frontend knows it; otherwise the backend guesses from the words
+    emotion: Literal["neutral", "happy", "sad", "angry", "surprised", "worried"] | None = None
 
 
 class RecognizeIn(BaseModel):
@@ -34,7 +38,7 @@ def vocab():
 
 @app.post("/translate")
 def translate_route(body: TranslateIn):
-    return translate(body.text)
+    return translate(body.text, body.emotion)
 
 
 @app.get("/books")

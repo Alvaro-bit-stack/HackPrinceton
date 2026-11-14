@@ -39,7 +39,7 @@ export default function Storybook() {
     <section>
       <h2>{book.title}</h2>
       <p className="story-text">{s.text}</p>
-      <SignPlayer signs={s.signs} face={s.face} />
+      <SignPlayer signs={s.signs} face={s.face} emotion={s.emotion} />
       <p>
         <button onClick={() => setI(i - 1)} disabled={i === 0}>Back</button>{" "}
         <span>Page {i + 1} of {book.sentences.length}</span>{" "}

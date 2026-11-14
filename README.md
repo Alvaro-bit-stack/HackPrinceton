@@ -14,7 +14,7 @@ Why this beats a video: signed videos exist for only a handful of books, because
 
 ```
 speech  -> speech.js      \
-                           -> text -> POST /translate -> ordered signs + face -> SignPlayer
+                           -> (text, emotion) -> POST /translate -> ordered signs + face + emotion -> SignPlayer
 book    -> shared/books/  /
 ```
 
@@ -65,7 +65,7 @@ Then open http://localhost:5173. Use Chrome, since speech recognition needs it.
 The starter is wired end to end with simple stand-ins, so each person can replace their part without waiting:
 - **Speak page:** type or speak a sentence and see the sign list and the face cue.
 - **Storybook page:** reads `shared/books/pips-morning.txt`, a short original story, one sentence per page.
-- **Translation:** maps words to signs one for one. It is not ASL grammar yet.
+- **Translation:** tags an emotion from keywords, checks the phrase bank (empty for now), then maps words to signs one for one. It is not ASL grammar yet.
 - **Signer:** shows each sign as a word on a card until the 3D signer or video clips go in.
 
 ## Stretch: child to parent

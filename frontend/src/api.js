@@ -11,7 +11,8 @@ async function post(path, body) {
   return res.json();
 }
 
-export const translate = (text) => post("/translate", { text });
+// emotion is optional: pass the speaker's tone when you know it, e.g. translate("Stop!", "angry")
+export const translate = (text, emotion) => post("/translate", { text, emotion });
 export const recognize = (frames) => post("/recognize", { frames });
 export const getVocab = () => fetch(BASE + "/vocab").then((r) => r.json());
 export const getBooks = () => fetch(BASE + "/books").then((r) => r.json());

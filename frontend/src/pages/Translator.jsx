@@ -28,7 +28,7 @@ export default function Translator() {
         <button type="button" onClick={() => listen(send, setError)}>Speak</button>
       </form>
       {error && <p role="alert">{error}</p>}
-      <SignPlayer signs={result.signs} face={result.face} />
+      <SignPlayer signs={result.signs} face={result.face} emotion={result.emotion} />
     </section>
   );
 }

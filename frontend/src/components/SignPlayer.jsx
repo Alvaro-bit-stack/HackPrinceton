@@ -9,7 +9,7 @@ const FACE_CUE = {
 // Steps through the signs one at a time and tells the parent which face goes with them.
 // Placeholder: shows each sign as a word. Swap the card for the 3D signer or a video clip
 // (put signer.glb in frontend/public/models/).
-export default function SignPlayer({ signs, face }) {
+export default function SignPlayer({ signs, face, emotion }) {
   const [i, setI] = useState(0);
 
   useEffect(() => {
@@ -29,6 +29,7 @@ export default function SignPlayer({ signs, face }) {
       </div>
       <p>{signs.map((s, n) => (n === i ? <strong key={n}>{s.gloss} </strong> : <span key={n}>{s.gloss} </span>))}</p>
       {FACE_CUE[face] && <p className="cue">{FACE_CUE[face]}</p>}
+      {emotion && emotion !== "neutral" && <p className="cue">Feeling: {emotion}. Show it on your face and in how you sign.</p>}
     </div>
   );
 }
