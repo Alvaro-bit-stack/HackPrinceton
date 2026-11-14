@@ -1,14 +1,17 @@
 # Backend and AI integration (Person 3)
 
-You own everything between the words and the sign list: hearing the parent, translating English into ASL order, and loading books.
+You own everything between the parent's words and the sign list: translating English into ASL order, reading the emotion, double-checking the translation, learning from corrections, and preparing books.
 
 | File | What it does |
 |---|---|
-| `backend/translate.py` | English text and emotion to an ordered sign list, grammar face and emotion. The heart of both the main goal and the pivot. |
-| `shared/phrases.json` | The phrase bank of human-checked translations. |
-| `backend/books.py` | Loads `shared/books/*.txt` and translates each sentence. |
+| `backend/translate.py` | The pipeline: validation, phrase bank, language model, self-check, fallback. Used by both the Speak page and the Storybook. |
+| `backend/llm.py` | Talks to the model provider (Anthropic or OpenAI) and holds the prompts. |
+| `backend/corrections.py` | Saves the parent's meaning and emotion corrections to `backend/data/corrections.json` (git-ignored). |
+| `backend/books.py` | Serves books from saved translations and builds those translations offline. |
 | `backend/main.py` | The API routes in `CONTRACT.md`. |
-| `shared/books/` | The texts for storybook mode. |
+| `backend/tests.py` | Tests that run with a fake model: no key, no network. |
+| `shared/phrases.json` | The phrase bank of signer-checked translations. |
+| `shared/books/` | Book texts (`.txt`) and their saved translations (`.signs.json`). |
 | `frontend/src/lib/speech.js` | Speech-to-text in the browser. |
 
 Nobody else edits these.
@@ -16,32 +19,57 @@ Nobody else edits these.
 ## The translation workflow
 Every sentence, spoken or from a book, goes through these steps in `translate.py`:
 
-1. **Tag the emotion.** The input is a pair: the words and the speaker's tone, for example `("Stop!", "angry")`. If the tone isn't sent, work it out from the words.
-2. **Phrase bank first.** If `shared/phrases.json` has a human-checked translation for the sentence, use it as is.
-3. **Language model otherwise.** Give it the vocabulary, a few ASL grammar notes, the emotion, and the closest phrase-bank entries as examples. It returns signs in ASL order, the grammar face and the emotion, using only signs on the list. For a word with no sign, it rephrases with signs we have or marks the word for fingerspelling.
-4. **Self-check.** A second call turns the sign list back into English. If the meaning changed, retry or flag it.
-5. **Corrections feed back.** When a reviewer fixes a translation, add it to the phrase bank.
+1. **Validate.**
+   - Text: 1 to 300 characters.
+   - `emotion`: one of the six, if sent.
+   - `face_emotions`: only the seven face-api.js labels, each with a value from 0 to 1.
+   - Bad input returns HTTP 422.
+2. **Apply a saved correction.** If the parent corrected this exact sentence before, their emotion and meaning are used.
+3. **Phrase bank.** If a fluent signer has checked this sentence, use those signs. No model call is made.
+   - **Emotion:** an explicit emotion wins. Otherwise a non-neutral face emotion scoring 0.6 or more. Otherwise the entry's own emotion, or a keyword guess, or neutral.
+   - **Corrected meaning:** if the parent corrected the meaning of a bank sentence, the bank is skipped, because the checked signs no longer match what they meant.
+4. **Language model.** It gets:
+   - the sentence, the face scores and any explicit emotion or meaning;
+   - the vocabulary;
+   - short ASL grammar notes;
+   - up to 4 similar phrase-bank entries and the last 10 corrections, as examples.
 
-Steps 1 and 2 work today in a simple form. Steps 3 and 4 are yours to build.
+   It returns signs in ASL order, the grammar face, the emotion and a one-line meaning. The words outrank the face. Words with no sign come back marked for fingerspelling.
+5. **Check the model's output.** Every sign must be in the vocabulary or marked for fingerspelling, and the face and emotion must be valid. If not, it retries once.
+6. **Self-check.** A second call turns the signs back into English and judges whether the meaning survived. If it didn't, the model re-translates once with feedback. If it still fails, the result is returned with `unsure: true`.
+7. **Time limit.** Each model call has a timeout (20 seconds by default, set with `LLM_TIMEOUT_SECONDS`), and the whole sentence has a 45-second budget. When the budget runs out, the best valid attempt is returned with `unsure: true`.
+8. **Fallback.** With no API key, no SDK, or a model error and no valid attempt, it returns the old word-for-word version: `source: "fallback"`, `unsure: true`. The demo never crashes.
 
-## Tasks
-1. Run the API and confirm the frontend reaches `/health`.
-2. Build step 3: replace the word-for-word stub with the language-model call. Have it return the emotion in the same call, so it reads the whole sentence and not just keywords.
-3. Build step 4: the back-translation self-check.
-4. Get tone from the voice. The browser's speech recognition returns words only, so pick one: record the audio and run a speech-emotion model on it, or send the audio to a model that accepts audio. Then pass the result as `emotion`. Until then the emotion comes from the words.
-5. Make speech reliable: test `speech.js` in a noisy room and keep the typed input as the fallback.
-6. Cache book translations so storybook pages load instantly, and so a reviewer's fix sticks.
-7. Add one or two more stories. Write them yourself or use public-domain text only.
-8. Run the hour-16 pivot test in the root README and record the result.
-9. Stretch, for the LangChain prize: a deepagents agent that prepares a whole book. It plans the work, translates each sentence, runs the self-check, and writes a report of missing signs and sentences that need a human look. Keep it out of the live speech path, where it would add delay.
-10. Own the end-to-end demo.
+Parents correct meaning and emotion through `POST /corrections`. A correction to the signs themselves only goes into `shared/phrases.json` once a fluent signer confirms it, by editing the file.
+
+## Setup
+1. `pip install -r backend/requirements.txt`. It includes both provider SDKs; you only need the one you use.
+2. Copy `backend/.env.example` to `.env` at the repo root, and fill in `LLM_PROVIDER` and the matching key.
+   - `LLM_MODEL` defaults to `claude-sonnet-5-5` for Anthropic.
+   - OpenAI has no default, so set `LLM_MODEL` yourself.
+3. Your Claude Pro or ChatGPT subscription doesn't cover API calls. You need a separate API account with credits.
 
 ## Run
+From the repo root:
 ```
-pip install -r backend/requirements.txt
-python backend/translate.py                      # self-check
-python -m backend.books                          # self-check
-uvicorn backend.main:app --reload --port 8000    # from the repo root
+python -m backend.tests                          # 24 tests, no key needed
+python -m backend.books build pips-morning       # translate a book once (needs a key)
+python -m backend.books build --all              # every book
+uvicorn backend.main:app --reload --port 8000    # the API
 ```
 
-Put API keys in a `.env` file. It is git-ignored; never commit keys.
+The build command prints how many sentences came from the phrase bank, the model or the fallback, how many are unsure, and any words with no sign. Commit the `.signs.json` files it writes, so the storybook works offline at the demo.
+
+## Tasks
+1. **Get an API key and test one real request.** The provider code in `llm.py` hasn't been run against the real SDKs yet. Translate one sentence with the server running and check the response.
+2. **Build the sample book's translation** and commit `shared/books/pips-morning.signs.json`.
+3. **Tune the prompts** in `llm.py` against 20 everyday parent sentences. Note which come back `unsure`.
+4. **Get a fluent signer to check translations,** and add the good ones to `shared/phrases.json` with `meaning` and `emotion`.
+5. **Make speech reliable.** Test `speech.js` in a noisy room, and keep typed input as the fallback.
+6. **Add one or two more stories.** Write them yourself or use public-domain text only.
+7. **Run the hour-16 pivot test** in the root README and record the result.
+8. **Stretch, for the LangChain prize:** a deepagents agent that prepares a whole book. It plans the work, calls `translate()` for each sentence, reviews the unsure ones, and writes a report of missing signs. It fits as an alternative to `build_book`, and stays off the live speech path.
+9. **Own the end-to-end demo.**
+
+## What the other two need from you
+Handoff notes are in [`handoff/frontend.md`](../handoff/frontend.md) and [`handoff/3d-signer.md`](../handoff/3d-signer.md).
