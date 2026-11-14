@@ -61,16 +61,21 @@ def per_sign(true, pred, conf, other, tau, glosses):
     true, pred = np.asarray(true, dtype=object), np.asarray(pred, dtype=object)
     conf, other = np.asarray(conf, float), np.asarray(other, bool)
     accepted = ~other & (conf >= tau)
+    pos = true != R.OTHER
     rows = []
     for g in glosses:
         m = true == g
         said = accepted & (pred == g)
+        said_pos = said & pos
         rows.append({
             "sign": g,
             "n": int(m.sum()),
             "accuracy": float((pred[m] == g).mean()) if m.any() else float("nan"),
             "precision": float((true[said] == g).mean()) if said.any() else float("nan"),
             "n_predicted": int(said.sum()),
+            "precision_vocab": float((true[said_pos] == g).mean()) if said_pos.any() else float("nan"),
+            "n_predicted_vocab": int(said_pos.sum()),
+            "other_answered_as": int((said & ~pos).sum()),
             "coverage": float(accepted[m].mean()) if m.any() else float("nan"),
             "accepted_correct": float((accepted[m] & (pred[m] == g)).mean()) if m.any() else float("nan"),
         })

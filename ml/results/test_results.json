@@ -1,0 +1,797 @@
+{
+  "split": "test",
+  "min_confidence": 0.62,
+  "temperature": 0.7367013126396462,
+  "n_clips": 1413,
+  "n_sign_clips": 233,
+  "model_c": {
+    "threshold": 0.62,
+    "n_sign_clips": 233,
+    "n_other_clips": 1180,
+    "closed_set_accuracy": 0.9141630901287554,
+    "accepted": 301,
+    "precision": 0.8715862421012738,
+    "precision_unweighted": 0.6345514950166113,
+    "precision_vocab_only": 0.9597989949748744,
+    "coverage": 0.8540772532188842,
+    "accepted_correct_rate": 0.8197424892703863,
+    "false_accept_rate_other": 0.08644067796610169,
+    "wrong_sign_rate": 0.034334763948497854
+  },
+  "model_c_per_sign": [
+    {
+      "sign": "ALL-DONE",
+      "n": 14,
+      "accuracy": 0.9285714285714286,
+      "precision": 0.375,
+      "n_predicted": 32,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 12,
+      "other_answered_as": 20,
+      "coverage": 0.8571428571428571,
+      "accepted_correct": 0.8571428571428571
+    },
+    {
+      "sign": "EAT",
+      "n": 26,
+      "accuracy": 1.0,
+      "precision": 0.7428571428571429,
+      "n_predicted": 35,
+      "precision_vocab": 0.9629629629629629,
+      "n_predicted_vocab": 27,
+      "other_answered_as": 8,
+      "coverage": 1.0,
+      "accepted_correct": 1.0
+    },
+    {
+      "sign": "HELP",
+      "n": 13,
+      "accuracy": 0.8461538461538461,
+      "precision": 0.7142857142857143,
+      "n_predicted": 14,
+      "precision_vocab": 0.9090909090909091,
+      "n_predicted_vocab": 11,
+      "other_answered_as": 3,
+      "coverage": 0.7692307692307693,
+      "accepted_correct": 0.7692307692307693
+    },
+    {
+      "sign": "LOVE",
+      "n": 12,
+      "accuracy": 0.9166666666666666,
+      "precision": 0.4166666666666667,
+      "n_predicted": 24,
+      "precision_vocab": 0.7142857142857143,
+      "n_predicted_vocab": 14,
+      "other_answered_as": 10,
+      "coverage": 0.8333333333333334,
+      "accepted_correct": 0.8333333333333334
+    },
+    {
+      "sign": "ME",
+      "n": 13,
+      "accuracy": 0.5384615384615384,
+      "precision": 0.75,
+      "n_predicted": 8,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 6,
+      "other_answered_as": 2,
+      "coverage": 0.7692307692307693,
+      "accepted_correct": 0.46153846153846156
+    },
+    {
+      "sign": "MILK",
+      "n": 23,
+      "accuracy": 0.9565217391304348,
+      "precision": 0.9,
+      "n_predicted": 20,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 18,
+      "other_answered_as": 2,
+      "coverage": 0.8260869565217391,
+      "accepted_correct": 0.782608695652174
+    },
+    {
+      "sign": "MORE",
+      "n": 12,
+      "accuracy": 1.0,
+      "precision": 0.8,
+      "n_predicted": 15,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 12,
+      "other_answered_as": 3,
+      "coverage": 1.0,
+      "accepted_correct": 1.0
+    },
+    {
+      "sign": "NO",
+      "n": 11,
+      "accuracy": 1.0,
+      "precision": 0.5238095238095238,
+      "n_predicted": 21,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 11,
+      "other_answered_as": 10,
+      "coverage": 1.0,
+      "accepted_correct": 1.0
+    },
+    {
+      "sign": "PLAY",
+      "n": 14,
+      "accuracy": 1.0,
+      "precision": 0.4482758620689655,
+      "n_predicted": 29,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 13,
+      "other_answered_as": 16,
+      "coverage": 0.9285714285714286,
+      "accepted_correct": 0.9285714285714286
+    },
+    {
+      "sign": "SLEEP",
+      "n": 12,
+      "accuracy": 0.8333333333333334,
+      "precision": 1.0,
+      "n_predicted": 8,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 8,
+      "other_answered_as": 0,
+      "coverage": 0.6666666666666666,
+      "accepted_correct": 0.6666666666666666
+    },
+    {
+      "sign": "WANT",
+      "n": 24,
+      "accuracy": 0.9166666666666666,
+      "precision": 0.9047619047619048,
+      "n_predicted": 21,
+      "precision_vocab": 0.9047619047619048,
+      "n_predicted_vocab": 21,
+      "other_answered_as": 0,
+      "coverage": 0.7916666666666666,
+      "accepted_correct": 0.7916666666666666
+    },
+    {
+      "sign": "WATER",
+      "n": 12,
+      "accuracy": 1.0,
+      "precision": 0.7333333333333333,
+      "n_predicted": 15,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 11,
+      "other_answered_as": 4,
+      "coverage": 0.9166666666666666,
+      "accepted_correct": 0.9166666666666666
+    },
+    {
+      "sign": "WHAT",
+      "n": 25,
+      "accuracy": 0.8,
+      "precision": 0.64,
+      "n_predicted": 25,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 16,
+      "other_answered_as": 9,
+      "coverage": 0.76,
+      "accepted_correct": 0.64
+    },
+    {
+      "sign": "YES",
+      "n": 10,
+      "accuracy": 1.0,
+      "precision": 0.5882352941176471,
+      "n_predicted": 17,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 10,
+      "other_answered_as": 7,
+      "coverage": 1.0,
+      "accepted_correct": 1.0
+    },
+    {
+      "sign": "YOU",
+      "n": 12,
+      "accuracy": 1.0,
+      "precision": 0.5294117647058824,
+      "n_predicted": 17,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 9,
+      "other_answered_as": 8,
+      "coverage": 0.75,
+      "accepted_correct": 0.75
+    }
+  ],
+  "model_c_tradeoff": [
+    {
+      "threshold": 0.0,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 394,
+      "precision": 0.808502815889303,
+      "precision_unweighted": 0.5203045685279187,
+      "precision_vocab_only": 0.9360730593607306,
+      "coverage": 0.9399141630901288,
+      "accepted_correct_rate": 0.8798283261802575,
+      "false_accept_rate_other": 0.1483050847457627,
+      "wrong_sign_rate": 0.060085836909871244
+    },
+    {
+      "threshold": 0.3,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 394,
+      "precision": 0.808502815889303,
+      "precision_unweighted": 0.5203045685279187,
+      "precision_vocab_only": 0.9360730593607306,
+      "coverage": 0.9399141630901288,
+      "accepted_correct_rate": 0.8798283261802575,
+      "false_accept_rate_other": 0.1483050847457627,
+      "wrong_sign_rate": 0.060085836909871244
+    },
+    {
+      "threshold": 0.4,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 380,
+      "precision": 0.8186669115321437,
+      "precision_unweighted": 0.5368421052631579,
+      "precision_vocab_only": 0.9400921658986175,
+      "coverage": 0.9313304721030042,
+      "accepted_correct_rate": 0.8755364806866953,
+      "false_accept_rate_other": 0.13813559322033897,
+      "wrong_sign_rate": 0.055793991416309016
+    },
+    {
+      "threshold": 0.5,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 347,
+      "precision": 0.8450553679079909,
+      "precision_unweighted": 0.579250720461095,
+      "precision_vocab_only": 0.95260663507109,
+      "coverage": 0.9055793991416309,
+      "accepted_correct_rate": 0.8626609442060086,
+      "false_accept_rate_other": 0.1152542372881356,
+      "wrong_sign_rate": 0.04291845493562232
+    },
+    {
+      "threshold": 0.6,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 308,
+      "precision": 0.8688685327971736,
+      "precision_unweighted": 0.6266233766233766,
+      "precision_vocab_only": 0.9601990049751243,
+      "coverage": 0.8626609442060086,
+      "accepted_correct_rate": 0.8283261802575107,
+      "false_accept_rate_other": 0.09067796610169492,
+      "wrong_sign_rate": 0.034334763948497854
+    },
+    {
+      "threshold": 0.7,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 270,
+      "precision": 0.8892274748805797,
+      "precision_unweighted": 0.6777777777777778,
+      "precision_vocab_only": 0.9631578947368421,
+      "coverage": 0.8154506437768241,
+      "accepted_correct_rate": 0.7854077253218884,
+      "false_accept_rate_other": 0.06779661016949153,
+      "wrong_sign_rate": 0.030042918454935622
+    },
+    {
+      "threshold": 0.8,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 230,
+      "precision": 0.9269359517964738,
+      "precision_unweighted": 0.7652173913043478,
+      "precision_vocab_only": 0.9777777777777777,
+      "coverage": 0.7725321888412017,
+      "accepted_correct_rate": 0.7553648068669528,
+      "false_accept_rate_other": 0.0423728813559322,
+      "wrong_sign_rate": 0.017167381974248927
+    },
+    {
+      "threshold": 0.9,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 189,
+      "precision": 0.9537516491195136,
+      "precision_unweighted": 0.8201058201058201,
+      "precision_vocab_only": 0.9935897435897436,
+      "coverage": 0.6695278969957081,
+      "accepted_correct_rate": 0.6652360515021459,
+      "false_accept_rate_other": 0.027966101694915254,
+      "wrong_sign_rate": 0.004291845493562232
+    },
+    {
+      "threshold": 0.95,
+      "n_sign_clips": 233,
+      "n_other_clips": 1180,
+      "closed_set_accuracy": 0.9141630901287554,
+      "accepted": 155,
+      "precision": 0.9699839890070118,
+      "precision_unweighted": 0.864516129032258,
+      "precision_vocab_only": 1.0,
+      "coverage": 0.575107296137339,
+      "accepted_correct_rate": 0.575107296137339,
+      "false_accept_rate_other": 0.017796610169491526,
+      "wrong_sign_rate": 0.0
+    }
+  ],
+  "model_c_confusions": [
+    [
+      "ME",
+      "LOVE",
+      5
+    ],
+    [
+      "HELP",
+      "WHAT",
+      2
+    ],
+    [
+      "WHAT",
+      "WANT",
+      2
+    ],
+    [
+      "ALL-DONE",
+      "WHAT",
+      1
+    ],
+    [
+      "LOVE",
+      "EAT",
+      1
+    ],
+    [
+      "ME",
+      "YES",
+      1
+    ],
+    [
+      "MILK",
+      "EAT",
+      1
+    ],
+    [
+      "SLEEP",
+      "WANT",
+      1
+    ],
+    [
+      "SLEEP",
+      "MILK",
+      1
+    ],
+    [
+      "WANT",
+      "ALL-DONE",
+      1
+    ]
+  ],
+  "model_c_false_accepts": [
+    [
+      "TOY 1 -> PLAY",
+      10
+    ],
+    [
+      "DONT KNOW -> ALL-DONE",
+      9
+    ],
+    [
+      "SORRY -> LOVE",
+      6
+    ],
+    [
+      "VANILLA -> NO",
+      6
+    ],
+    [
+      "NOT USED_TO -> ALL-DONE",
+      4
+    ],
+    [
+      "HOME -> EAT",
+      3
+    ],
+    [
+      "OOPS -> EAT",
+      3
+    ],
+    [
+      "RAKE -> WHAT",
+      3
+    ],
+    [
+      "TOY 3 -> PLAY",
+      3
+    ],
+    [
+      "ANALYZE -> NO",
+      2
+    ],
+    [
+      "DRUNK -> YES",
+      2
+    ],
+    [
+      "HABIT -> YES",
+      2
+    ],
+    [
+      "HAMSTER -> NO",
+      2
+    ],
+    [
+      "JELLY -> HELP",
+      2
+    ],
+    [
+      "JELLY -> WHAT",
+      2
+    ]
+  ],
+  "model_c_by_variant": {
+    "FINISH": [
+      13,
+      14
+    ],
+    "EAT": [
+      17,
+      17
+    ],
+    "EAT 2": [
+      9,
+      9
+    ],
+    "HELP": [
+      11,
+      13
+    ],
+    "LOVE": [
+      11,
+      12
+    ],
+    "ME": [
+      7,
+      13
+    ],
+    "MILK": [
+      10,
+      11
+    ],
+    "MILK 2": [
+      12,
+      12
+    ],
+    "MORE": [
+      12,
+      12
+    ],
+    "NO": [
+      11,
+      11
+    ],
+    "PLAY": [
+      14,
+      14
+    ],
+    "SLEEP": [
+      10,
+      12
+    ],
+    "WANT": [
+      12,
+      12
+    ],
+    "WANT 2": [
+      10,
+      12
+    ],
+    "WATER": [
+      12,
+      12
+    ],
+    "WHAT 2": [
+      10,
+      13
+    ],
+    "WHAT 1": [
+      10,
+      12
+    ],
+    "YES": [
+      10,
+      10
+    ],
+    "YOU": [
+      12,
+      12
+    ]
+  },
+  "model_c_window": {
+    "threshold": 0.62,
+    "n_sign_clips": 233,
+    "n_other_clips": 1180,
+    "closed_set_accuracy": 0.871244635193133,
+    "accepted": 304,
+    "precision": 0.8575918287173443,
+    "precision_unweighted": 0.6085526315789473,
+    "precision_vocab_only": 0.9536082474226805,
+    "coverage": 0.8326180257510729,
+    "accepted_correct_rate": 0.7939914163090128,
+    "false_accept_rate_other": 0.09322033898305085,
+    "wrong_sign_rate": 0.03862660944206009
+  },
+  "baselines": {
+    "A: last-frame NN (original)": {
+      "at_val_threshold": {
+        "threshold": 0.64,
+        "n_sign_clips": 233,
+        "n_other_clips": 1180,
+        "closed_set_accuracy": 0.24034334763948498,
+        "accepted": 14,
+        "precision": 0.5443808820815649,
+        "precision_unweighted": 0.35714285714285715,
+        "precision_vocab_only": 0.625,
+        "coverage": 0.034334763948497854,
+        "accepted_correct_rate": 0.02145922746781116,
+        "false_accept_rate_other": 0.005084745762711864,
+        "wrong_sign_rate": 0.012875536480686695
+      },
+      "at_original_0.6": {
+        "threshold": 0.6,
+        "n_sign_clips": 233,
+        "n_other_clips": 1180,
+        "closed_set_accuracy": 0.24034334763948498,
+        "accepted": 44,
+        "precision": 0.33773561761458887,
+        "precision_unweighted": 0.1590909090909091,
+        "precision_vocab_only": 0.4666666666666667,
+        "coverage": 0.06437768240343347,
+        "accepted_correct_rate": 0.030042918454935622,
+        "false_accept_rate_other": 0.02457627118644068,
+        "wrong_sign_rate": 0.034334763948497854
+      }
+    },
+    "B1: sequence 5-NN": {
+      "at_val_threshold": {
+        "threshold": 0.81,
+        "n_sign_clips": 233,
+        "n_other_clips": 1180,
+        "closed_set_accuracy": 0.6008583690987125,
+        "accepted": 21,
+        "precision": 0.9407124575168883,
+        "precision_unweighted": 0.9047619047619048,
+        "precision_vocab_only": 0.95,
+        "coverage": 0.08583690987124463,
+        "accepted_correct_rate": 0.0815450643776824,
+        "false_accept_rate_other": 0.000847457627118644,
+        "wrong_sign_rate": 0.004291845493562232
+      }
+    },
+    "B2: sequence 1-NN DTW": {
+      "at_val_threshold": {
+        "threshold": 0.47,
+        "n_sign_clips": 233,
+        "n_other_clips": 1180,
+        "closed_set_accuracy": 0.6695278969957081,
+        "accepted": 25,
+        "precision": 0.8576620230163536,
+        "precision_unweighted": 0.72,
+        "precision_vocab_only": 0.9,
+        "coverage": 0.08583690987124463,
+        "accepted_correct_rate": 0.07725321888412018,
+        "false_accept_rate_other": 0.00423728813559322,
+        "wrong_sign_rate": 0.008583690987124463
+      }
+    }
+  },
+  "baseline_a_per_sign": [
+    {
+      "sign": "ALL-DONE",
+      "n": 14,
+      "accuracy": 0.2857142857142857,
+      "precision": 1.0,
+      "n_predicted": 1,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 1,
+      "other_answered_as": 0,
+      "coverage": 0.07142857142857142,
+      "accepted_correct": 0.07142857142857142
+    },
+    {
+      "sign": "EAT",
+      "n": 26,
+      "accuracy": 0.46153846153846156,
+      "precision": 1.0,
+      "n_predicted": 3,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 3,
+      "other_answered_as": 0,
+      "coverage": 0.11538461538461539,
+      "accepted_correct": 0.11538461538461539
+    },
+    {
+      "sign": "HELP",
+      "n": 13,
+      "accuracy": 0.23076923076923078,
+      "precision": 0.0,
+      "n_predicted": 1,
+      "precision_vocab": 0.0,
+      "n_predicted_vocab": 1,
+      "other_answered_as": 0,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "LOVE",
+      "n": 12,
+      "accuracy": 0.25,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.08333333333333333,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "ME",
+      "n": 13,
+      "accuracy": 0.15384615384615385,
+      "precision": 0.0,
+      "n_predicted": 1,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 1,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "MILK",
+      "n": 23,
+      "accuracy": 0.2608695652173913,
+      "precision": 0.5,
+      "n_predicted": 2,
+      "precision_vocab": 1.0,
+      "n_predicted_vocab": 1,
+      "other_answered_as": 1,
+      "coverage": 0.043478260869565216,
+      "accepted_correct": 0.043478260869565216
+    },
+    {
+      "sign": "MORE",
+      "n": 12,
+      "accuracy": 0.3333333333333333,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "NO",
+      "n": 11,
+      "accuracy": 0.2727272727272727,
+      "precision": 0.0,
+      "n_predicted": 3,
+      "precision_vocab": 0.0,
+      "n_predicted_vocab": 2,
+      "other_answered_as": 1,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "PLAY",
+      "n": 14,
+      "accuracy": 0.14285714285714285,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "SLEEP",
+      "n": 12,
+      "accuracy": 0.08333333333333333,
+      "precision": 0.0,
+      "n_predicted": 1,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 1,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "WANT",
+      "n": 24,
+      "accuracy": 0.125,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.041666666666666664,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "WATER",
+      "n": 12,
+      "accuracy": 0.3333333333333333,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "WHAT",
+      "n": 25,
+      "accuracy": 0.2,
+      "precision": 0.0,
+      "n_predicted": 1,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 1,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "YES",
+      "n": 10,
+      "accuracy": 0.2,
+      "precision": 0.0,
+      "n_predicted": 1,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 1,
+      "coverage": 0.1,
+      "accepted_correct": 0.0
+    },
+    {
+      "sign": "YOU",
+      "n": 12,
+      "accuracy": 0.16666666666666666,
+      "precision": NaN,
+      "n_predicted": 0,
+      "precision_vocab": NaN,
+      "n_predicted_vocab": 0,
+      "other_answered_as": 0,
+      "coverage": 0.0,
+      "accepted_correct": 0.0
+    }
+  ],
+  "baseline_a_window": {
+    "threshold": 0.64,
+    "n_sign_clips": 233,
+    "n_other_clips": 1180,
+    "closed_set_accuracy": 0.3905579399141631,
+    "accepted": 7,
+    "precision": 0.5560791705937794,
+    "precision_unweighted": 0.42857142857142855,
+    "precision_vocab_only": 0.6,
+    "coverage": 0.02145922746781116,
+    "accepted_correct_rate": 0.012875536480686695,
+    "false_accept_rate_other": 0.001694915254237288,
+    "wrong_sign_rate": 0.008583690987124463
+  }
+}

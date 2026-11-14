@@ -80,3 +80,22 @@ _(Summary will be written here at the end of the run.)_
 - `python ml/recognizer.py` passes with the model, both in ml/.venv and in the system Python (numpy only, no torch): 15/15 reference clips, movement-only pair, edge cases.
 - Added WLASL (Voxel51/WLASL on HF, C-UDA license, academic use only) as extra *training* data: `wlasl_prep.py` extracted 132 clips (5-14 per sign, 4-11 signers per sign) with MediaPipe HandLandmarker (same model as the browser), 0 skipped. Val/test stay ASL Citizen only. Next: run 2 = same sweep with WLASL added; pick between run 1 and run 2 on the same validation set.
 
+- `2026-11-14 00:30` [train.py] data: 1703 train / 435 val clips, 16 classes (389 / 75 are vocab signs)
+- `2026-11-14 00:30` [train.py] A: last-frame NN (original): val closed-set acc 0.187; threshold 0.64 -> precision 0.828, coverage 0.013 (0s)
+- `2026-11-14 00:30` [train.py] B1: sequence 5-NN: val closed-set acc 0.653; threshold 0.81 -> precision 1.000, coverage 0.053 (10s)
+- `2026-11-14 00:30` [train.py] B2: sequence 1-NN DTW: val closed-set acc 0.747; threshold 0.47 -> precision 0.923, coverage 0.067 (49s)
+- `2026-11-14 00:34` [train.py] Model C `base` {'width': 96, 'dilations': (1, 2, 4), 'dropout': 0.3, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 47/77, val_acc 0.947, val_loss 0.407, 189s
+- `2026-11-14 00:36` [train.py] Model C `small` {'width': 64, 'dilations': (1, 2), 'dropout': 0.2, 'lr': 0.002, 'weight_decay': 0.001}: best epoch 51/81, val_acc 0.973, val_loss 0.473, 162s
+- `2026-11-14 00:40` [train.py] Model C `wide` {'width': 128, 'dilations': (1, 2, 4), 'dropout': 0.4, 'lr': 0.0015, 'weight_decay': 0.003}: best epoch 54/84, val_acc 0.960, val_loss 0.300, 193s
+- `2026-11-14 00:40` [train.py] chosen config: `small` (val_acc 0.973)
+- `2026-11-14 00:40` [train.py] temperature 0.74 (val NLL 0.434); MIN_CONFIDENCE 0.62 -> val precision 0.902, coverage 0.880, false accepts on non-vocab 0.081
+- `2026-11-14 00:40` [train.py] exported data\model_run2.npz (240 KB); numpy vs torch max prob diff 6.26e-07
+- `2026-11-14 00:40` [train.py] done; summary in results/train_summary.json
+
+### 2026-11-14 00:48 Run 2 chosen; single test evaluation
+- Run 2 (ASL Citizen + WLASL train) lines above: baselines on val A 19%, B1 65%, B2 75% (WLASL slightly hurt the nearest-neighbour baselines: domain shift); Model C `small` val top-1 **97.3%** (run 1: 96.0%), val NLL 0.43 (run 1: 0.61), coverage at the 90%-precision threshold 88% (run 1: 80%). **Chose run 2** on validation; copied data/model_run2.npz -> model.npz. results/ and model_selfcheck.npz are from run 2.
+- Calibration: temperature 0.74; **MIN_CONFIDENCE = 0.62** = smallest threshold with >= 90% validation precision (non-vocab clips weighted 1:1 with vocab clips) at that threshold and every higher one. Val coverage 88%, val false-accept on non-vocab 8%.
+- Phase 4: `reference.py` (+ `references.npz`, 111 KB, medoid training clip per sign) and `test_reference.py`; all pass.
+- **Test split, evaluated once** (`evaluate.py`; `results/accuracy_table.md`): Model C top-1 **91%** vs A 24% / B1 60% / B2 67%. At 0.62: coverage 85%, precision on vocab attempts 96%, weighted precision **87% (below the 90% target)**, 9% of non-vocab clips get a vocab answer. Short 15-frame windows: 87% top-1.
+- I re-ran evaluate.py once more only to fix the per-sign precision column (it had mixed in the 5:1 non-vocab clips, making e.g. ALL-DONE look like 38%); same model, same threshold, same numbers otherwise. **The threshold was NOT changed after seeing test.** The test trade-off table shows 0.80 would give ~93% precision at 77% coverage; that is for a human to decide, flagged in the summary.
+- Main errors: ME -> LOVE (5/13; both at the chest, location invisible with hand-only input); non-vocab near-twins TOY -> PLAY, DONT KNOW -> ALL-DONE, SORRY -> LOVE, HOME/OOPS -> EAT.
