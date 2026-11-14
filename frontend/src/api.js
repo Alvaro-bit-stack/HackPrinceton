@@ -1,0 +1,16 @@
+// The only place the frontend talks to the backend. Shapes are defined in CONTRACT.md.
+const BASE = import.meta.env.VITE_API ?? "http://localhost:8000";
+
+async function post(path, body) {
+  const res = await fetch(BASE + path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${path} failed with ${res.status}`);
+  return res.json();
+}
+
+export const translate = (text) => post("/translate", { text });
+export const recognize = (frames) => post("/recognize", { frames });
+export const getVocab = () => fetch(BASE + "/vocab").then((r) => r.json());

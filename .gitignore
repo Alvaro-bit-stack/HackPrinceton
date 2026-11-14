@@ -1,0 +1,9 @@
+node_modules/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.blend1
+ml/data/
+ml/models/*.bin

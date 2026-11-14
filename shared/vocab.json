@@ -1,0 +1,17 @@
+[
+  {"gloss": "MILK",     "english": ["milk"]},
+  {"gloss": "MORE",     "english": ["more"]},
+  {"gloss": "EAT",      "english": ["eat", "food", "hungry"]},
+  {"gloss": "WATER",    "english": ["water", "thirsty"]},
+  {"gloss": "SLEEP",    "english": ["sleep", "bed", "bedtime", "tired"]},
+  {"gloss": "HELP",     "english": ["help"]},
+  {"gloss": "ALL-DONE", "english": ["done", "finished"]},
+  {"gloss": "WANT",     "english": ["want"]},
+  {"gloss": "YOU",      "english": ["you"]},
+  {"gloss": "ME",       "english": ["i", "me"]},
+  {"gloss": "LOVE",     "english": ["love"]},
+  {"gloss": "WHAT",     "english": ["what"]},
+  {"gloss": "YES",      "english": ["yes"]},
+  {"gloss": "NO",       "english": ["no"]},
+  {"gloss": "PLAY",     "english": ["play"]}
+]
