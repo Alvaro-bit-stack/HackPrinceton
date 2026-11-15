@@ -1,49 +1,72 @@
+
 import { useState } from "react";
+import Home from "./pages/Home.jsx";
 import Translator from "./pages/Translator.jsx";
 import Reader from "./pages/Reader.jsx";
-import Learn from "./pages/Learn.jsx";
-import Home from "./pages/Home.jsx";
 
-const PAGES = { Home, Speak: Translator, Read: Reader, Practice: Learn };
-const AVATARS = [
-  { id: "signer_glasses", name: "Glasses" }, // first = default: it has a clip for every vocab sign and A-Z
-  { id: "signer_tshirt", name: "T-shirt" },
-];
+const PAGES = {
+  Home,
+  Speak: Translator,
+  Read: Reader,
+};
 
 export default function App() {
   const [page, setPage] = useState("Home");
-  const [avatar, setAvatar] = useState(() => localStorage.getItem("manibus-avatar") || AVATARS[0].id);
-  const Page = PAGES[page];
 
-  function pickAvatar(id) {
-    setAvatar(id);
-    localStorage.setItem("manibus-avatar", id);
+  function navigate(destination) {
+    if (!PAGES[destination]) return;
+    setPage(destination);
+    window.scrollTo(0, 0);
   }
 
+  const Page = PAGES[page];
+
   return (
-    <>
-      <a href="#main" className="skip">Skip to content</a>
-      <header className="topbar">
-        <button className="brand" onClick={() => setPage("Home")} aria-label="Manibus home">
-          <span aria-hidden="true">🤟</span> Manibus
+    <div className="manibus-app">
+      <header className="topbar manibus-topbar">
+        <button
+          type="button"
+          className="brand manibus-brand"
+          onClick={() => navigate("Home")}
+          aria-label="Go to Manibus home"
+        >
+          <img
+            src="/manibus-logo.png"
+            alt="Manibus"
+            className="brand-logo"
+          />
         </button>
-        <nav aria-label="Main">
-          {Object.keys(PAGES).filter((n) => n !== "Home").map((name) => (
-            <button key={name} onClick={() => setPage(name)} aria-current={page === name ? "page" : undefined}>
-              {name}
+
+        <nav
+          className="manibus-nav"
+          aria-label="Main navigation"
+        >
+          {[
+            ["Home", "Home"],
+            ["Speak", "Translate"],
+            ["Read", "Read"],
+          ].map(([id, label]) => (
+            <button
+              type="button"
+              key={id}
+              className={page === id ? "is-active" : ""}
+              aria-current={
+                page === id ? "page" : undefined
+              }
+              onClick={() => navigate(id)}
+            >
+              {label}
             </button>
           ))}
         </nav>
-        <label className="avatar-pick">
-          Signer
-          <select value={avatar} onChange={(e) => pickAvatar(e.target.value)}>
-            {AVATARS.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
-        </label>
       </header>
-      <main id="main">
-        <Page avatar={avatar} go={setPage} />
+
+      <main id="main" className="manibus-main">
+        <Page
+          avatar="signer_glasses"
+          go={navigate}
+        />
       </main>
-    </>
+    </div>
   );
 }

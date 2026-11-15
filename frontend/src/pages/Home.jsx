@@ -1,45 +1,73 @@
-import { useEffect, useState } from "react";
-import { getHealth } from "../api.js";
 
-const CARDS = [
-  { page: "Speak", icon: "🎤", title: "Speak", text: "Talk or type to your child. Manibus signs it in ASL, with the feeling in your face and voice." },
-  { page: "Read", icon: "📖", title: "Read", text: "Read a story or your own text together. Each sentence is signed while the words light up." },
-  { page: "Practice", icon: "✋", title: "Practice", text: "Try a sign on camera and get a gentle hint." },
-];
-
-// Landing page: what Manibus is for and where to start.
-export default function Home({ go }) {
-  const [server, setServer] = useState("checking");
-  useEffect(() => {
-    getHealth().then(() => setServer("ok")).catch(() => setServer("down"));
-  }, []);
-
+function ArrowIcon() {
   return (
-    <div className="home">
-      <section className="hero">
-        <h1>Sign with your child, every day</h1>
-        <p>
-          Most deaf children are born to hearing parents. Manibus helps you talk to your child in American Sign Language
-          as you go about your day: say something and a friendly 3D signer shows you how to sign it.
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+export default function Home({ go }) {
+  return (
+    <section className="manibus-landing">
+      <div className="manibus-landing-inner">
+
+        <p className="manibus-landing-eyebrow">
+          INTRODUCING MANIBUS
         </p>
-      </section>
-      <div className="cards">
-        {CARDS.map((c) => (
-          <button key={c.page} className="card" onClick={() => go(c.page)}>
-            <span className="card-icon" aria-hidden="true">{c.icon}</span>
-            <strong>{c.title}</strong>
-            <span>{c.text}</span>
+
+        <div className="manibus-landing-logo">
+          <img
+            src="/manibus-logo.png"
+            alt="Manibus"
+          />
+        </div>
+
+        <h1 className="manibus-landing-headline">
+          Learning independently.
+          <br />
+          <span>Signing confidently.</span>
+        </h1>
+
+        <p className="manibus-landing-tagline">
+          An AI tool enabling{" "}
+          <strong>self-driven learning</strong> and{" "}
+          <strong>critical sign language exposure</strong>
+          <br className="desktop-break" />
+          for deaf students.
+        </p>
+
+        <div className="manibus-landing-actions">
+          <button
+            type="button"
+            className="manibus-landing-primary"
+            onClick={() => go("Speak")}
+          >
+            Start translating
+            <ArrowIcon />
           </button>
-        ))}
+        </div>
+
+        <blockquote className="manibus-landing-quote">
+          <p>
+            “Education is the kindling of a flame,
+            not the filling of a vessel.”
+          </p>
+          <cite>— Socrates</cite>
+        </blockquote>
+
       </div>
-      {server === "down" && (
-        <p role="alert" className="error">
-          The Manibus server isn't answering. Start it with <code>uvicorn backend.main:app --port 8000</code> from the project folder.
-        </p>
-      )}
-      <p className="muted small">
-        Translations are a starting point, not a replacement for a fluent signer. Anything marked “not sure” is worth checking.
-      </p>
-    </div>
+    </section>
   );
 }

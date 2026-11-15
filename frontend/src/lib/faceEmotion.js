@@ -101,12 +101,24 @@ function tick() {
 }
 
 // Starts reading faces from a playing <video>. onScores(scores | null) fires about 10 times a second.
-export async function startFaceEmotion(videoEl, onScores) {
+export async function startFaceEmotion(videoEl, onScores, signal) {
   await loadModel();
+  if (signal?.aborted) return;
   stopFaceEmotion();
   video = videoEl;
   onScoresCb = onScores;
-  timer = setInterval(tick, TICK_MS);
+  resumeFaceEmotion();
+}
+
+export function pauseFaceEmotion() {
+  if (video && timer === null) tick();
+  clearInterval(timer);
+  timer = null;
+  return latest;
+}
+
+export function resumeFaceEmotion() {
+  if (video && timer === null) timer = setInterval(tick, TICK_MS);
 }
 
 export function stopFaceEmotion() {

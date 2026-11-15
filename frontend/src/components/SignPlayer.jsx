@@ -360,9 +360,6 @@ export default function SignPlayer({
         </div>
       )}
       {!compact && signs.length > 0 && FACE_CUE[face] && <p className="cue">{FACE_CUE[face]}</p>}
-      {!compact && signs.length > 0 && emotion && emotion !== "neutral" && (
-        <p className="cue">Feeling: {emotion}. Show it on your face and in how big you sign.</p>
-      )}
     </div>
   );
 }

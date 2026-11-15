@@ -1,317 +1,568 @@
+
 import { useEffect, useRef, useState } from "react";
-import { correct, getFamily, translate } from "../api.js";
+import { getFamily, translate } from "../api.js";
 import SignPlayer from "../components/SignPlayer.jsx";
-import PlayerControls from "../components/PlayerControls.jsx";
-import { SourceBadge } from "../components/Badges.jsx";
+import PlayerControls, { AslSpeedSlider } from "../components/PlayerControls.jsx";
+
 import {
-  beginSentence, currentFaceScores, endSentence, hasNeutralFace, neutralFaceFrame, recordNeutralFace, snapFace, startFaceEmotion, stopFaceEmotion,
+  beginSentence,
+  endSentence,
+  faceRunning,
+  neutralFaceFrame,
+  pauseFaceEmotion,
+  recordNeutralFace,
+  resumeFaceEmotion,
+  snapFace,
+  startFaceEmotion,
+  stopFaceEmotion,
 } from "../lib/faceEmotion.js";
+
 import { canListen, startListening } from "../lib/speech.js";
-import { releaseVoice, resetVoiceBaseline, startVoice, stopVoice } from "../lib/voice.js";
 
-const EMOTIONS = ["neutral", "happy", "sad", "angry", "surprised", "worried"];
-const EMOJI = { neutral: "😐", happy: "😊", sad: "😢", angry: "😠", surprised: "😮", worried: "😟", fearful: "😨", disgusted: "🤢" };
+import { releaseVoice, startVoice, stopVoice } from "../lib/voice.js";
 
-// Main goal: the parent speaks (or types) and the app signs it, with the feeling in their face and voice.
-export default function Translator({ avatar }) {
+function capitalize(value) {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+// All icons are SVGs. No emoji assets required.
+function Icon({ name, size = 22 }) {
+  const paths = {
+    mic: (
+      <>
+        <rect x="9" y="2" width="6" height="12" rx="3" />
+        <path d="M5 10a7 7 0 0 0 14 0" />
+        <path d="M12 17v5M8 22h8" />
+      </>
+    ),
+    arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
+    camera: (
+      <>
+        <path d="M3 7h4l2-3h6l2 3h4v13H3V7Z" />
+        <circle cx="12" cy="13" r="4" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
+export default function Translator({ avatar = "signer_glasses" }) {
   const [text, setText] = useState("");
-  const [heard, setHeard] = useState("");
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
-  const [sent, setSent] = useState("");
-  const [feeling, setFeeling] = useState(""); // "" = let the app decide
+
   const [members, setMembers] = useState([]);
   const [speaker, setSpeaker] = useState("");
-  const [useVoice, setUseVoice] = useState(true);
+
   const [playing, setPlaying] = useState(true);
   const [done, setDone] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [playKey, setPlayKey] = useState(0);
-  const [fixing, setFixing] = useState(false);
+
   const cam = useCameraFace();
   const session = useRef(null);
+  const messageInputRef = useRef(null);
 
   useEffect(() => {
-    getFamily().then((f) => setMembers(f.members || [])).catch(() => {});
-    return () => { session.current?.stop(); releaseVoice(); };
+    if (!listening) return;
+
+    const input = messageInputRef.current;
+    input.scrollTop = input.scrollHeight;
+  }, [listening, text]);
+
+  useEffect(() => {
+    getFamily()
+      .then((family) => setMembers(family.members || []))
+      .catch(() => {});
+
+    return () => {
+      const recording = session.current;
+      session.current = null;
+      recording?.stop();
+      releaseVoice();
+    };
   }, []);
 
   async function send(sentence, extra = {}) {
-    const clean = sentence.trim();
+    const clean = String(sentence || "").trim();
+
     if (!clean) return;
-    if (clean.length > 300) return setError("That's a lot at once. Keep it under 300 characters, or use the Reader for longer text.");
-    setText(clean);
-    setSent(clean);
+
+    if (clean.length > 300) {
+      setError(
+        "Please keep your message under 300 characters. Use Reader for longer text."
+      );
+      return;
+    }
+
     setError("");
-    setFixing(false);
     setBusy(true);
+
     try {
-      const r = await translate(clean, { emotion: feeling || undefined, speaker: speaker || undefined, ...extra });
-      setResult(r);
+      const response = await translate(clean, {
+        speaker: speaker || undefined,
+        ...extra,
+      });
+
+      setResult(response);
       setDone(false);
       setPlaying(true);
-      setPlayKey((k) => k + 1);
-    } catch (e) {
-      setError(e.message);
+      setPlayKey((key) => key + 1);
+    } catch (err) {
+      setError(err?.message || "Translation failed. Please try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  function sendTyped() {
+  function sendMessage() {
     const extra = {};
-    if (cam.on) {
-      const now = currentFaceScores();
-      if (now) extra.faceEmotions = now;
-      if (cam.photos) { const jpg = snapFace(); if (jpg) extra.faceFrames = [jpg]; extra.faceNeutral = neutralFaceFrame(); }
+
+    if (cam.ready) {
+      const scores = cam.captureEmotion();
+
+      if (scores) {
+        extra.faceEmotions = scores;
+      }
+
+      const image = snapFace();
+      if (image) {
+        extra.faceFrames = [image];
+        extra.faceNeutral = neutralFaceFrame();
+      }
     }
+
     send(text, extra);
   }
 
+  function finishRecording() {
+    if (faceRunning()) cam.captureEmotion();
+    session.current?.stop();
+  }
+
   async function toggleMic() {
-    if (listening) return session.current?.stop();
+    if (listening) {
+      finishRecording();
+      return;
+    }
+
     setError("");
-    setHeard("");
-    if (cam.on) beginSentence({ photos: cam.photos });
-    const voiceOn = useVoice && (await startVoice());
+    cam.resumeEmotion();
+
+    const voiceOn = await startVoice();
+    const cameraStream = cam.ready ? cam.videoRef.current?.srcObject : null;
+
+    if (cameraStream) {
+      beginSentence({ photos: true });
+    }
+
     session.current = startListening({
-      onInterim: setHeard,
-      onError: (msg) => setError(msg),
+      onInterim: setText,
+
+      onError: (message) => {
+        setError(message);
+      },
+
       onEnd: (finalText) => {
+        if (!session.current) return;
+
         setListening(false);
         session.current = null;
+
         const voice = voiceOn ? stopVoice() : {};
-        const face = cam.on ? endSentence() : null;
-        if (!finalText) return;
-        setHeard(finalText);
+        if (finalText && faceRunning()) cam.captureEmotion();
+
+        const face = cameraStream && cam.videoRef.current?.srcObject === cameraStream
+          ? endSentence()
+          : null;
+
+        if (!finalText) {
+          cam.resumeEmotion();
+          return;
+        }
+
+        setText(finalText);
+
         send(finalText, {
-          loudness: voice.loudness, pitch: voice.pitch,
+          loudness: voice.loudness,
+          pitch: voice.pitch,
           faceEmotions: face?.faceEmotions || undefined,
-          faceFrames: cam.photos ? face?.frames : undefined,
-          faceNeutral: cam.photos ? face?.neutralFrame : undefined,
+          faceFrames: face?.frames,
+          faceNeutral: face?.neutralFrame,
         });
       },
     });
-    if (session.current) setListening(true);
-    else if (voiceOn) stopVoice();
-  }
 
-  async function applyFix(meaning, emotion) {
-    setBusy(true);
-    setError("");
-    try {
-      setResult(await correct(sent, { meaning, emotion }));
-      setFixing(false);
-      setDone(false);
-      setPlaying(true);
-      setPlayKey((k) => k + 1);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
+    if (session.current) {
+      setListening(true);
+    } else if (voiceOn) {
+      stopVoice();
     }
   }
 
   return (
-    <div className="speak">
-      <section className="panel input-panel">
-        <h1>Say it, and Manibus signs it</h1>
-        <div className="mic-row">
-          <button
-            className={`mic${listening ? " live" : ""}`}
-            onClick={toggleMic}
-            disabled={!canListen || busy}
-            aria-pressed={listening}
-            aria-label={listening ? "Stop listening" : "Start listening"}
-          >
-            <span aria-hidden="true">{listening ? "■" : "🎤"}</span>
-          </button>
-          <div className="mic-help">
-            {!canListen ? (
-              <p>This browser can't listen. Use Chrome or Edge, or type below.</p>
-            ) : listening ? (
-              <p><strong>Listening…</strong> tap again when you're done.</p>
-            ) : (
-              <p>Tap the microphone and talk to your child like you normally would.</p>
-            )}
-            {heard && <p className="heard" aria-live="polite">“{heard}”</p>}
+    <div className="manibus-translate-page">
+      <header className="manibus-page-header">
+        <h1>Translate to ASL.</h1>
+      </header>
+
+      <div className="speak manibus-workspace">
+        {/* LEFT PANEL */}
+        <section className="panel input-panel manibus-panel">
+          <div className="manibus-panel-heading">
+            <div>
+              <span className="manibus-section-label">
+                YOUR MESSAGE
+              </span>
+              <h2>What would you like to say?</h2>
+            </div>
           </div>
-        </div>
 
-        <form className="type-row" onSubmit={(e) => { e.preventDefault(); sendTyped(); }}>
-          <label htmlFor="say" className="sr-only">What you want to say</label>
-          <input id="say" value={text} maxLength={300} onChange={(e) => setText(e.target.value)} placeholder="Or type: Do you want more milk?" />
-          <button type="submit" className="primary" disabled={busy || !text.trim()}>Sign it</button>
-        </form>
+          <div className="manibus-mic-section">
+            <button
+              type="button"
+              className={`mic manibus-mic ${listening ? "live" : ""}`}
+              onClick={toggleMic}
+              disabled={!canListen || busy}
+              aria-pressed={listening}
+              aria-label={
+                listening ? "Stop listening" : "Start listening"
+              }
+            >
+              {listening ? (
+                <span
+                  className="manibus-stop-icon"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Icon name="mic" size={25} />
+              )}
+            </button>
 
-        <fieldset className="feelings">
-          <legend>How do you feel saying it? <span className="muted">(optional)</span></legend>
-          <button type="button" aria-pressed={feeling === ""} onClick={() => setFeeling("")}>✨ Let Manibus tell</button>
-          {EMOTIONS.map((e) => (
-            <button type="button" key={e} aria-pressed={feeling === e} onClick={() => setFeeling(e)}>{EMOJI[e]} {e}</button>
-          ))}
-        </fieldset>
+            <div className="manibus-mic-copy">
+              <strong>
+                {listening ? "Listening to you..." : "Speak naturally"}
+              </strong>
 
-        <details className="options">
-          <summary>Face, voice and family options</summary>
-          <FaceOptions cam={cam} />
-          <label className="check">
-            <input type="checkbox" checked={useVoice} onChange={(e) => setUseVoice(e.target.checked)} />
-            Use how loud and high my voice is to set how strongly it's signed (audio never leaves this device)
-          </label>
-          <button type="button" className="link" onClick={resetVoiceBaseline}>Reset my normal voice level</button>
+              <p>
+                {!canListen
+                  ? "Voice input isn't supported here. Please type your message."
+                  : listening
+                    ? "Select Translate to ASL when you’re done."
+                    : "Tap the microphone to start."}
+              </p>
+            </div>
+          </div>
+
+          <form
+            className="manibus-message-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (busy) return;
+
+              if (listening) {
+                finishRecording();
+              } else {
+                sendMessage();
+              }
+            }}
+          >
+            <CameraPreview cam={cam}>
+              <div className="manibus-message-entry">
+                <div className="manibus-message-label">
+                  <label htmlFor="say">Message</label>
+                  <span>{text.length} / 300</span>
+                </div>
+                <textarea
+                  ref={messageInputRef}
+                  id="say"
+                  className="manibus-message-input"
+                  value={text}
+                  maxLength={300}
+                  readOnly={listening}
+                  onChange={(event) => {
+                    setText(event.target.value);
+                    cam.resumeEmotion();
+                  }}
+                  placeholder={listening ? "Listening…" : "Speak or type your message"}
+                  rows={2}
+                />
+              </div>
+            </CameraPreview>
+
+            <button
+              type="submit"
+              className="primary manibus-submit"
+              disabled={busy || (!listening && !text.trim())}
+            >
+              {busy ? "Translating..." : "Translate to ASL"}
+              <Icon name="arrow" size={18} />
+            </button>
+          </form>
+
           {members.length > 0 && (
-            <label className="field">
-              Who's talking?
-              <select value={speaker} onChange={(e) => setSpeaker(e.target.value)}>
-                <option value="">Not saying</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            <label className="field manibus-speaker">
+              Who's speaking?
+              <select
+                value={speaker}
+                onChange={(event) => setSpeaker(event.target.value)}
+              >
+                <option value="">Not specified</option>
+
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
               </select>
             </label>
           )}
-        </details>
-      </section>
+        </section>
 
-      <section className="panel output-panel" aria-busy={busy}>
-        {error && <p role="alert" className="error">{error}</p>}
-        {busy && <p className="loading" role="status"><span className="spinner" aria-hidden="true" /> Translating… (Manibus translates, then double-checks)</p>}
-        <SignPlayer
-          signs={result?.signs || []}
-          face={result?.face}
-          emotion={result?.emotion}
-          intensity={result?.intensity}
-          newSigns={result?.new_signs}
-          avatar={avatar}
-          playing={playing}
-          speed={speed}
-          playKey={playKey}
-          onDone={() => { setPlaying(false); setDone(true); }}
-        />
-        {result && (
-          <>
-            <PlayerControls
-              playing={playing}
-              onPlay={() => { if (done) { setDone(false); setPlayKey((k) => k + 1); } setPlaying(true); }}
-              onPause={() => setPlaying(false)}
-              onReplay={() => { setDone(false); setPlaying(true); setPlayKey((k) => k + 1); }}
-              speed={speed}
-              onSpeed={setSpeed}
-            />
-            <div className="understood">
-              <p><span className="muted">Manibus understood:</span> <strong>{result.meaning}</strong></p>
-              <p className="badges">
-                <SourceBadge source={result.source} unsure={result.unsure} />
-                <span className="badge">{EMOJI[result.emotion] || ""} {result.emotion}</span>
-                {typeof result.intensity === "number" && (
-                  <span className="badge" title={result.tone_reason || ""}>
-                    strength <span className="meter"><span style={{ width: `${Math.round(result.intensity * 100)}%` }} /></span>
-                  </span>
-                )}
-              </p>
-              {result.new_signs?.length > 0 && (
-                <p className="new-note">🌱 New for your family: {result.new_signs.join(", ")}. Great way to grow your child's words!</p>
-              )}
-              {!fixing ? (
-                <button type="button" onClick={() => setFixing(true)} disabled={busy}>That's not what I meant</button>
-              ) : (
-                <FixForm initial={result} onCancel={() => setFixing(false)} onSubmit={applyFix} busy={busy} />
-              )}
+        {/* RIGHT PANEL: 3D GLASSES AVATAR */}
+        <section
+          className="panel output-panel manibus-panel manibus-output"
+          aria-busy={busy}
+        >
+          <div className="manibus-panel-heading">
+            <div>
+              <span className="manibus-section-label">
+                VISUAL TRANSLATION
+              </span>
+              <h2>ASL Interpreter</h2>
             </div>
-          </>
-        )}
-      </section>
+
+            <span className="manibus-avatar-tag">
+              3D SIGNER
+            </span>
+          </div>
+
+          {error && (
+            <p role="alert" className="error">
+              {error}
+            </p>
+          )}
+
+          {busy && (
+            <p className="loading" role="status">
+              <span
+                className="spinner"
+                aria-hidden="true"
+              />
+              Preparing your translation...
+            </p>
+          )}
+
+          <div className="manibus-signing-area">
+            <SignPlayer
+              signs={result?.signs || []}
+              face={result?.face}
+              emotion={result?.emotion}
+              intensity={result?.intensity}
+              newSigns={result?.new_signs}
+              avatar={avatar}
+              playing={playing}
+              speed={speed}
+              playKey={playKey}
+              onDone={() => {
+                setPlaying(false);
+                setDone(true);
+              }}
+            />
+          </div>
+
+          <AslSpeedSlider speed={speed} onSpeed={setSpeed} id="translate-asl-speed" />
+
+          {result && (
+            <div className="manibus-translation-details">
+              <PlayerControls
+                playing={playing}
+                onPlay={() => {
+                  if (done) {
+                    setDone(false);
+                    setPlayKey((key) => key + 1);
+                  }
+                  setPlaying(true);
+                }}
+                onPause={() => setPlaying(false)}
+                onReplay={() => {
+                  setDone(false);
+                  setPlaying(true);
+                  setPlayKey((key) => key + 1);
+                }}
+              />
+            </div>
+          )}
+
+          <div className="manibus-avatar-footer">
+            <span className="manibus-ready-dot" />
+            <span>
+              {busy
+                ? "Translation in progress"
+                : result
+                  ? "Translation ready"
+                  : "Ready to translate"}
+            </span>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
 
-function FixForm({ initial, onSubmit, onCancel, busy }) {
-  const [meaning, setMeaning] = useState("");
-  const [emotion, setEmotion] = useState(initial.emotion || "");
-  const changed = meaning.trim() || (emotion && emotion !== initial.emotion);
-  return (
-    <form className="fix" onSubmit={(e) => { e.preventDefault(); if (changed) onSubmit(meaning, emotion !== initial.emotion ? emotion : undefined); }}>
-      <label className="field">
-        What did you mean?
-        <input value={meaning} maxLength={300} onChange={(e) => setMeaning(e.target.value)} placeholder="e.g. I'm surprised, not proud" />
-      </label>
-      <label className="field">
-        How did you feel?
-        <select value={emotion} onChange={(e) => setEmotion(e.target.value)}>
-          {EMOTIONS.map((e) => <option key={e} value={e}>{EMOJI[e]} {e}</option>)}
-        </select>
-      </label>
-      <p>
-        <button type="submit" className="primary" disabled={busy || !changed}>Fix it</button>{" "}
-        <button type="button" onClick={onCancel}>Cancel</button>
-      </p>
-      <p className="muted small">Manibus remembers this for next time. Corrections to the signs themselves go to a fluent signer.</p>
-    </form>
-  );
-}
-
-// Camera + face-reading state for the Speak page. Off until the parent turns it on.
 function useCameraFace() {
   const videoRef = useRef(null);
-  const streamRef = useRef(null);
   const [on, setOn] = useState(false);
-  const [state, setState] = useState(""); // status line
+  const [ready, setReady] = useState(false);
+  const [state, setState] = useState("Starting camera…");
   const [live, setLive] = useState(null);
-  const [photos, setPhotos] = useState(false);
+  const [captured, setCaptured] = useState(false);
 
-  async function start() {
-    setState("Starting the camera and face reader…");
-    try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = streamRef.current;
-      await videoRef.current.play();
-      await startFaceEmotion(videoRef.current, setLive);
-      setOn(true);
-      setState(hasNeutralFace() ? "" : "Tip: press “Record my neutral face” first so I can read you better.");
-    } catch (e) {
-      stop();
-      setState(e?.name === "NotAllowedError" ? "The camera is blocked. Allow it in the browser to use face reading." : `Face reading isn't available: ${e?.message || e}`);
+  useEffect(() => {
+    const video = videoRef.current;
+    const controller = new AbortController();
+    const { signal } = controller;
+    let stream;
+    let previewPlaying = false;
+
+    function stopStream() {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (video.srcObject === stream) video.srcObject = null;
     }
+
+    async function connectCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (signal.aborted) {
+          stopStream();
+          return;
+        }
+
+        video.srcObject = stream;
+        await video.play();
+        if (signal.aborted) return;
+
+        previewPlaying = true;
+        setOn(true);
+        setState("Starting emotion detection…");
+        await startFaceEmotion(video, setLive, signal);
+        if (signal.aborted) return;
+
+        setReady(true);
+        setState("");
+      } catch (error) {
+        if (signal.aborted) return;
+
+        if (previewPlaying) {
+          setState("Emotion detection is unavailable.");
+        } else {
+          stopStream();
+          setState(error?.name === "NotAllowedError"
+            ? "Camera blocked. Allow access in your browser and reopen Translate."
+            : "Camera unavailable.");
+        }
+      }
+    }
+
+    connectCamera();
+
+    return () => {
+      controller.abort();
+      stopFaceEmotion();
+      stopStream();
+    };
+  }, []);
+
+  function captureEmotion() {
+    const scores = pauseFaceEmotion();
+    setLive(scores);
+    setCaptured(true);
+    return scores;
   }
-  function stop() {
-    stopFaceEmotion();
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setOn(false);
-    setLive(null);
+
+  function resumeEmotion() {
+    resumeFaceEmotion();
+    setCaptured(false);
   }
+
   async function calibrate() {
-    setState("Hold a relaxed, neutral face for 2 seconds…");
-    const ok = await recordNeutralFace();
-    setState(ok ? "Got it! Your neutral face is recorded." : "I couldn't see your face. Try again facing the camera.");
+    resumeEmotion();
+    setState("Hold a relaxed expression for two seconds…");
+    const success = await recordNeutralFace();
+    setState(success
+      ? "Neutral face recorded."
+      : "Couldn't detect your face. Please try again.");
   }
-  useEffect(() => () => stop(), []);
-  return { videoRef, on, state, live, photos, setPhotos, start, stop, calibrate };
+
+  return { videoRef, on, ready, state, live, captured, captureEmotion, resumeEmotion, calibrate };
 }
 
-function FaceOptions({ cam }) {
+function CameraPreview({ cam, children }) {
   const top = cam.live && Object.entries(cam.live).sort((a, b) => b[1] - a[1])[0];
+
   return (
-    <div className="face-opts">
-      <label className="check">
-        <input type="checkbox" checked={cam.on} onChange={(e) => (e.target.checked ? cam.start() : cam.stop())} />
-        Read my face with the camera to sign the feeling too (only emotion scores are sent)
-      </label>
-      <div className={cam.on ? "face-live" : "face-live hidden"}>
-        <video ref={cam.videoRef} className="webcam small" muted playsInline aria-label="Your camera" />
-        {cam.on && (
-          <div>
-            <p aria-live="polite">{top ? <>I see: <strong>{EMOJI[top[0]]} {top[0]}</strong></> : "Looking for your face…"}</p>
-            <button type="button" onClick={cam.calibrate}>Record my neutral face</button>
-            <label className="check">
-              <input type="checkbox" checked={cam.photos} onChange={(e) => cam.setPhotos(e.target.checked)} />
-              Also send up to 3 face snapshots to the AI for a better read (never stored)
-            </label>
-          </div>
-        )}
+    <div className="manibus-camera">
+      <div className="manibus-capture">
+        <div className="manibus-camera-preview">
+          <video
+            ref={cam.videoRef}
+            className="webcam"
+            muted
+            playsInline
+            aria-label="Camera preview"
+          />
+          {!cam.on && (
+            <p className="manibus-camera-placeholder" role="status">
+              <Icon name="camera" size={20} />
+              {cam.state}
+            </p>
+          )}
+        </div>
+
+        {children}
       </div>
-      {cam.state && <p className="muted small">{cam.state}</p>}
+
+      {cam.on && (
+        <div className="manibus-camera-controls">
+          {cam.ready && (
+            <>
+              <span>
+                {cam.captured
+                  ? `Captured emotion: ${top ? capitalize(top[0]) : "No face detected"}`
+                  : top
+                    ? `Detected emotion: ${capitalize(top[0])}`
+                    : "Looking for your face."}
+              </span>
+              <button type="button" onClick={cam.calibrate}>Record neutral face</button>
+            </>
+          )}
+          {cam.state && <p className="manibus-camera-status" role="status">{cam.state}</p>}
+        </div>
+      )}
+
+      <p className="manibus-camera-disclosure">
+        Translations can send up to three camera snapshots and a neutral
+        reference photo to the AI service for emotion detection.
+      </p>
     </div>
   );
 }

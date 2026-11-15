@@ -387,6 +387,8 @@ def test_prompts():
     s, u = llm.translate_prompt("Hi", T.VOCAB, {"happy": 0.5}, "sad", "greeting", [{"english": "a", "signs": ["YES"]}], [{"text": "t"}], {"signs": ["NO"], "problem": "bad"})
     assert "MILK: milk" in s + u and "FS:WORD" in s and "fluent signer" in s and "words decide" in u and "greeting" in u and "bad" in u and "Sentence: Hi" in u
     assert "loudness" not in u and "+0.70" in llm.translate_prompt("Hi", T.VOCAB, loudness=0.7)[1]
+    u = llm.translate_prompt("Finish your milk by the tree", T.VOCAB)[1]
+    assert "finish: ASL-LEX sign 'finish', same sign as ALL-DONE" in u and "tree: ASL-LEX sign 'tree', not animated yet" in u and "milk: ASL-LEX" not in u
 
 
 def test_review_fixes():

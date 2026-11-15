@@ -1,7 +1,10 @@
 """Language-model wrapper and prompts for translate.py. SDKs are imported lazily so the backend runs without them."""
 import json
 import os
+import re
 from pathlib import Path
+
+from backend import asl_lex
 
 ROOT = Path(__file__).parent.parent
 DEFAULT_MODELS = {"anthropic": "claude-sonnet-5-5"}
@@ -106,10 +109,26 @@ Reply with one JSON object and nothing else:
 {{"signs": [gloss or "FS:WORD", ...], "face": "statement" | "yes-no-question" | "wh-question", "emotion": "neutral" | "happy" | "sad" | "angry" | "surprised" | "worried", "intensity": 0.0-1.0, "tone_reason": "<one short line: which signals decided the emotion and intensity>", "meaning": "<one short line>"}}"""
 
 
+def dictionary_notes(sentence, vocab):
+    """ASL-LEX lines for sentence words outside the allowed list: which allowed gloss is the same sign, or that it has no clip yet."""
+    known = {w for v in vocab for w in v["english"]}
+    gloss_of = {v["asl_lex"]: v["gloss"] for v in vocab if v.get("asl_lex")}
+    notes = []
+    for w in dict.fromkeys(re.findall(r"[a-z]+", sentence.lower())):
+        entry = None if w in known else asl_lex.has_sign(w)
+        if entry:
+            g = gloss_of.get(entry)
+            notes.append(f"{w}: ASL-LEX sign {entry!r}, " + (f"same sign as {g}" if g else "not animated yet"))
+    return notes
+
+
 def translate_prompt(sentence, vocab, face_emotions=None, emotion=None, meaning_hint=None,
                      examples=(), corrections=(), previous=None, loudness=None, pitch=None,
                      face_frames=None, face_neutral=None):
     parts = ["Allowed glosses (gloss: English words):\n" + "\n".join(f"{v['gloss']}: {', '.join(v['english'])}" for v in vocab)]
+    if notes := dictionary_notes(sentence, vocab):
+        parts.append("ASL-LEX dictionary entries for other words in this sentence. Use the allowed gloss named; "
+                     "for a sign not animated yet, rephrase with allowed glosses, or fingerspell it if the meaning needs it:\n" + "\n".join(notes))
     if face_emotions:
         parts.append(f"The parent's face emotion scores (0 to 1): {json.dumps(face_emotions)}. "
                      "The words decide the emotion when they carry intent. The face decides when the words are ambiguous "
