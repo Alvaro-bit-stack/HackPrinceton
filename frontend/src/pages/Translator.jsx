@@ -378,7 +378,6 @@ export default function Translator({ avatar = "signer_glasses" }) {
               face={result?.face}
               emotion={result?.emotion}
               intensity={result?.intensity}
-              newSigns={result?.new_signs}
               avatar={avatar}
               playing={playing}
               speed={speed}

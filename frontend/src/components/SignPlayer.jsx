@@ -145,7 +145,7 @@ function scaleRotation(q, rest, k) {
 
 export default function SignPlayer({
   signs = [], face = "statement", emotion = "neutral", intensity = 0.5, avatar = DEFAULT_AVATAR,
-  newSigns = [], playing = true, speed = 1, playKey = 0, onStep, onDone, compact = false,
+  playing = true, speed = 1, playKey = 0, onStep, onDone, compact = false,
 }) {
   const stageRef = useRef(null);
   const eng = useRef({ steps: [], stepIdx: 0, elapsed: 0, done: true, clips: new Map(), faceCur: {}, tilt: 0 });
@@ -323,7 +323,6 @@ export default function SignPlayer({
 
   const e = eng.current;
   const cur = step >= 0 && e.stepsFor === signs ? e.steps[step] : null;
-  const fresh = new Set(newSigns);
   const showCard = cur && (cur.kind === "card" || status === "cards");
   const word = cur && cur.letter ? signs[cur.from]?.gloss : null;
 
@@ -351,10 +350,10 @@ export default function SignPlayer({
           {signs.map((s, n) => (
             <span
               key={n}
-              className={["gloss", cur && n >= cur.from && n <= cur.to ? "on" : "", s.known ? "" : "fs", fresh.has(s.gloss) ? "new" : ""].join(" ")}
+              className={["gloss", cur && n >= cur.from && n <= cur.to ? "on" : "", s.known ? "" : "fs"].join(" ")}
               title={s.known ? "has a sign" : "fingerspelled"}
             >
-              {s.gloss}{fresh.has(s.gloss) && <em> new!</em>}
+              {s.gloss}
             </span>
           ))}
         </div>
