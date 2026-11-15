@@ -4,10 +4,14 @@ Everything the family sees, except the signer itself.
 
 | File | What it does |
 |---|---|
-| `src/App.jsx` | Navigation between pages. |
-| `src/pages/Translator.jsx` | Speak page, the main goal: the parent speaks and the app signs. |
-| `src/pages/Storybook.jsx` | Storybook page, the pivot: a book signed one sentence per page. |
+| `src/App.jsx` | Navigation between pages and the signer (avatar) picker. |
+| `src/pages/Home.jsx` | Landing page: what Manibus is for, and a check that the backend answers. |
+| `src/pages/Translator.jsx` | Speak page, the main goal: the parent speaks (or types) and the app signs, with optional face and voice tone. |
+| `src/pages/Reader.jsx` | Reader: a book from `/books` or the parent's own text (typed or a .txt/.md file), signed sentence by sentence with the text highlighted. |
+| `src/components/PlayerControls.jsx`, `src/components/Badges.jsx` | Play/pause/replay/prev/next/speed controls, and the translation-source badge. |
 | `src/pages/Learn.jsx`, `src/components/Webcam.jsx` | Practice page, a stretch feature. |
+| `src/lib/faceEmotion.js`, `src/lib/voice.js` | Face emotion scores (MediaPipe) and voice loudness/pitch, sent with `/translate`. |
+| `src/lib/text.js` | Sentence splitting and word highlighting for the Reader. |
 | `src/api.js` | Calls to the backend. |
 | `src/styles.css` | Styles. |
 
@@ -27,3 +31,4 @@ cd frontend
 npm install
 npm run dev        # http://localhost:5173
 ```
+The backend must be running on port 8000 (see `backend/README.md`). Without an LLM key in `.env` it still works, in word-by-word fallback mode.

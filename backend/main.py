@@ -19,7 +19,7 @@ from backend.translate import MAX_FRAME_CHARS, MAX_FRAMES, VOCAB, translate
 from ml.recognizer import predict
 
 app = FastAPI(title="HackPrinceton sign bridge")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_methods=["*"], allow_headers=["*"])
 
 
 Emotion = Literal["neutral", "happy", "sad", "angry", "surprised", "worried"]
