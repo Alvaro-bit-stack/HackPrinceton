@@ -19,7 +19,7 @@ const HEAD_TILT = 0.12; // radians, slight forward tilt on questions
 
 const EMOTIONS = {
   neutral: { face: {}, speed: 1, size: 1 },
-  happy: { face: { mouthSmileLeft: 0.7, mouthSmileRight: 0.7 }, speed: 1, size: 1.1 },
+  happy: { face: { mouthSmileLeft: 1, mouthSmileRight: 1, eyeSquintLeft: 0.35, eyeSquintRight: 0.35 }, speed: 1, size: 1.1 },
   sad: { face: { mouthFrownLeft: 0.6, mouthFrownRight: 0.6, browInnerUp: 0.5 }, speed: 0.85, size: 0.9 },
   angry: { face: { browDownLeft: 0.8, browDownRight: 0.8, mouthFrownLeft: 0.3, mouthFrownRight: 0.3 }, speed: 1.15, size: 1.1 },
   surprised: {

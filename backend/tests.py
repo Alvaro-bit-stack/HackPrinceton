@@ -455,7 +455,7 @@ def test_asl_lex():
     # every sign in vocab.json is linked to a real ASL-LEX entry
     if A.LEX.exists():
         entries = {e["entry"] for e in json.loads(A.LEX.read_text(encoding="utf-8"))["signs"]}
-        assert all(v["asl_lex"] in entries for v in T.VOCAB), [v["gloss"] for v in T.VOCAB if v["asl_lex"] not in entries]
+        assert all(v["asl_lex"] in entries for v in T.VOCAB if v["asl_lex"]), [v["gloss"] for v in T.VOCAB if v["asl_lex"] and v["asl_lex"] not in entries]  # null = not in ASL-LEX (e.g. PROUD)
 
 
 def test_family_profile():

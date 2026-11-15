@@ -27,5 +27,8 @@
   {"gloss": "THINK-ABOUT", "english": ["wonder", "consider", "ponder"], "asl_lex": "wonder"},
   {"gloss": "THINK", "english": ["think", "thought"], "asl_lex": "think"},
   {"gloss": "ABOUT", "english": ["about"], "asl_lex": "about_2"},
-  {"gloss": "DID", "english": ["did"], "asl_lex": "do_do"}
+  {"gloss": "DID", "english": ["did"], "asl_lex": "do_do"},
+  {"gloss": "GOOD", "english": ["good", "great"], "asl_lex": "good"},
+  {"gloss": "JOB", "english": ["job", "work"], "asl_lex": "work"},
+  {"gloss": "PROUD", "english": ["proud"], "asl_lex": null}
 ]

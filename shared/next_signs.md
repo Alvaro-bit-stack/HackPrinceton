@@ -95,8 +95,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | ear | ear | Body Parts | 27.0 | 2.7 | baby_o | Head / Other |
 | monkey | monkey | Animals | 27.0 | 2.62 | curved_5 | Body / Waist |
 | helicopter | helicopter | Vehicles | 27.0 | 2.48 | 5 | Hand / FingerTip |
-| work | work | Action Signs | 28.0 | 6.74 | s | Hand / PalmBack |
-| good | good | Descriptive Signs | 28.0 | 6.44 | open_b | Head / Chin |
 | nothing | nothing | Quantifiers | 28.0 | 6.32 | o | Neutral / Neutral |
 | drive | drive | Action Signs | 28.0 | 5.81 | s | Neutral / Neutral |
 | happy | happy | Mental State Terms | 28.0 | 5.7 | open_b | Body / TorsoTop |

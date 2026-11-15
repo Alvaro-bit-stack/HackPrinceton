@@ -22,5 +22,31 @@
     ],
     "face": "statement",
     "meaning": "Asking the child to reflect on their behavior"
+  },
+  {
+    "english": "Good job, I'm proud of you.",
+    "signs": [
+      "GOOD",
+      "JOB",
+      "ME",
+      "PROUD",
+      "YOU"
+    ],
+    "face": "statement",
+    "emotion": "happy",
+    "meaning": "Praising the child"
+  },
+  {
+    "english": "Good job im proud of you",
+    "signs": [
+      "GOOD",
+      "JOB",
+      "ME",
+      "PROUD",
+      "YOU"
+    ],
+    "face": "statement",
+    "emotion": "happy",
+    "meaning": "Praising the child"
   }
 ]

@@ -232,6 +232,30 @@
     "what",
     "what do"
    ]
+  },
+  "GOOD": {
+   "asl_lex": "good",
+   "translations": [
+    "good"
+   ]
+  },
+  "JOB": {
+   "asl_lex": "work",
+   "translations": [
+    "career",
+    "employ",
+    "employment",
+    "job",
+    "labor",
+    "occupation",
+    "profession",
+    "work",
+    "working"
+   ]
+  },
+  "PROUD": {
+   "asl_lex": null,
+   "translations": []
   }
  },
  "look_alikes": [
@@ -271,8 +295,23 @@
    12
   ],
   [
+   "FUTURE",
+   "GOOD",
+   12
+  ],
+  [
+   "GOOD",
+   "MOM",
+   12
+  ],
+  [
    "ALL-DONE",
    "YOUR",
+   11
+  ],
+  [
+   "DAD",
+   "GOOD",
    11
   ],
   [
@@ -283,6 +322,11 @@
   [
    "DRINK",
    "FUTURE",
+   11
+  ],
+  [
+   "DRINK",
+   "GOOD",
    11
   ],
   [
@@ -372,6 +416,11 @@
   ],
   [
    "EAT",
+   "GOOD",
+   10
+  ],
+  [
+   "EAT",
    "MOM",
    10
   ],
@@ -388,6 +437,16 @@
   [
    "GIVE",
    "YOUR",
+   10
+  ],
+  [
+   "GOOD",
+   "YOUR",
+   10
+  ],
+  [
+   "JOB",
+   "YES",
    10
   ],
   [
@@ -486,6 +545,16 @@
    9
   ],
   [
+   "GOOD",
+   "SCHOOL",
+   9
+  ],
+  [
+   "GOOD",
+   "SLEEP",
+   9
+  ],
+  [
    "HOW",
    "WANT",
    9
@@ -498,6 +567,11 @@
   [
    "HOW",
    "YOUR",
+   9
+  ],
+  [
+   "JOB",
+   "SCHOOL",
    9
   ],
   [

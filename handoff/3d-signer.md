@@ -126,8 +126,8 @@ A kid in a plain T-shirt, ready for three.js:
 A kid with glasses and a blue T-shirt, built from a Meshy T-pose model (about 25k triangles, 5.8 MB, JPEG textures):
 - **Skeleton and face:** the same 43 bone names and the same 20 morph targets as `signer_tshirt.glb`, so clips and face settings carry over. The rest pose is a T-pose, not arms-down, so a clip made on another avatar needs its arm rotations redone.
 - **Hands:** the arms are the model's own; the hands are replaced from the wrist with five-finger hands in a flat skin colour.
-- **Face:** eyelids sit behind the glasses. Smile and frown bend a painted lip line, so they stay modest.
-- **55 clips, the default avatar:** one per gloss in `shared/vocab.json` (all 29) plus `FS_A` … `FS_Z`. `shared/sign_animation_map.json` lists each sign's ASL-LEX phonology, mouthing and clip length.
+- **Face:** eyelids sit behind the glasses. Smile and frown bend a painted lip line; the smile keys are boosted about 2x at the mouth corners so "happy" reads at app size (more distorts the face).
+- **58 clips, the default avatar:** one per gloss in `shared/vocab.json` (all 32) plus `FS_A` … `FS_Z`. `shared/sign_animation_map.json` lists each sign's ASL-LEX phonology, mouthing and clip length.
 - **Word clips** start and end in the same relaxed "ready" pose (hands in front of the belly), carry English mouthing, and leave the brows and head tilt to the player (it sets them from `face`). YES nods and NO shakes the head; SLEEP closes the eyes.
 - **Letter clips** hold the handshape at the right shoulder (0.5 s; J and Z 0.75–0.8 s with their motion). M, N and T are approximate: the thumb doesn't show between the fingers.
 - **Smooth chaining** is in `SignPlayer`: inside a sentence it skips most of each clip's walk to and from the ready pose and crossfades sign to sign (0.2 s), and uses a 0.3 s fade into and out of fingerspelling.

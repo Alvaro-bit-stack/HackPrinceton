@@ -623,6 +623,59 @@
    },
    "asl_lex_sign_ms": 1068,
    "note": "same motion as DO-DO; ASL has no separate past-tense DID"
+  },
+  {
+   "gloss": "GOOD",
+   "clip": "GOOD",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "good",
+   "mouthing": "good",
+   "phonology": {
+    "Handshape": "open_b",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Chin",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 367
+  },
+  {
+   "gloss": "JOB",
+   "clip": "JOB",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "work",
+   "mouthing": "job",
+   "phonology": {
+    "Handshape": "s",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyClosed",
+    "ThumbPosition": "Closed",
+    "SignType": "AsymmetricalSameHandshape",
+    "NonDominantHandshape": "s",
+    "MajorLocation": "Hand",
+    "MinorLocation": "PalmBack",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 400,
+   "note": "the ASL WORK sign (fist taps the back of the other wrist); ASL-LEX work lists job"
+  },
+  {
+   "gloss": "PROUD",
+   "clip": "PROUD",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": null,
+   "mouthing": "proud",
+   "phonology": null,
+   "note": "not in ASL-LEX: thumb of an A-hand slides up the chest"
   }
  ],
  "letters": {
@@ -782,6 +835,18 @@
    ],
    "face": "statement",
    "note": "phrase-bank version chosen for the demo; an ASL-style alternative is YOU DO-DO THINK-ABOUT"
+  },
+  {
+   "english": "Good job, I'm proud of you.",
+   "signs": [
+    "GOOD",
+    "JOB",
+    "ME",
+    "PROUD",
+    "YOU"
+   ],
+   "face": "statement",
+   "emotion": "happy"
   }
  ]
 }
