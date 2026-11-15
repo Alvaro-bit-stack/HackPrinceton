@@ -774,24 +774,14 @@
   {
    "english": "Think about what you did.",
    "signs": [
-    "YOU",
-    "DO-DO",
-    "THINK-ABOUT"
-   ],
-   "face": "statement",
-   "note": "topic first (what you did), then THINK-ABOUT; DO-DO covers 'did what'. A literal YOU THINK ABOUT YOU DID WHAT is English order and the final WHAT would read as a real question."
-  },
-  {
-   "english": "Think about what you did. (as the AI glossed it)",
-   "signs": [
     "THINK",
     "ABOUT",
     "YOU",
     "DID",
     "WHAT"
    ],
-   "face": "wh-question",
-   "note": "added for the demo; English word order, see the YOU DO-DO THINK-ABOUT entry for the ASL-style version"
+   "face": "statement",
+   "note": "phrase-bank version chosen for the demo; an ASL-style alternative is YOU DO-DO THINK-ABOUT"
   }
  ]
 }

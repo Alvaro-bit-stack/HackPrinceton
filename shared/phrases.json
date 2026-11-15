@@ -14,9 +14,11 @@
   {
     "english": "Think about what you did.",
     "signs": [
+      "THINK",
+      "ABOUT",
       "YOU",
-      "DO-DO",
-      "THINK-ABOUT"
+      "DID",
+      "WHAT"
     ],
     "face": "statement",
     "meaning": "Asking the child to reflect on their behavior"
