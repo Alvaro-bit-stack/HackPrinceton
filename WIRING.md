@@ -55,7 +55,7 @@ sequenceDiagram
 | The browser sends audio or video to the backend | **Never.** Only text and numbers leave the browser. Speech is turned into text in the browser. Tone becomes two numbers (`loudness`, `pitch`). The face becomes 7 scores. The one exception is opt-in face photos (2 to 3 small JPEGs per sentence), and only when the parent turns that on. |
 | The backend works out the emotion from a dataset | No dataset is involved in emotion. **The AI decides the emotion** in the same call that writes the translation, by weighing the words, the face (scores and photos) and the voice. A few fixed rules sit around it (section 4). |
 | ASL-LEX is used to translate | **No.** ASL-LEX is a research dictionary. It decides *which signs to animate next* and *which signs to suggest to parents* (`/progress`). The AI never sees it. |
-| The AI can use any ASL sign | The AI may only use glosses in **`shared/vocab.json`**, the signs that have an animation clip, currently 19. Any other word comes back as `known: false` and gets **fingerspelled**. |
+| The AI can use any ASL sign | The AI may only use glosses in **`shared/vocab.json`**, the signs that have an animation clip, currently 24. Any other word comes back as `known: false` and gets **fingerspelled**. |
 | The avatar's animation is generated live | **Body animation is pre-made clips**, one per gloss, played in order with short blends. Only the **face** is computed live (morph-target weights) from `face`, `emotion` and `intensity`. |
 | `face` and `emotion` are the same thing | `face` is **grammar**: the eyebrows for statements and questions. `emotion` is **feeling**: the rest of the face plus how big and sharp the signing is. An angry question needs both. |
 | The answer comes back instantly | A sentence takes **about 10 to 18 seconds**: two AI calls (translate, then self-check), and longer with photos. Show a loading state, and block double-sending. |
@@ -207,7 +207,7 @@ The plan is to animate **all 26 letters plus common words** chosen from the data
 - **Missing letter clips show the letters.** For `known: false`, play `FS_<letter>` clips where they exist; otherwise show the letters one at a time.
 - **The face works with no clips at all.** Brows, emotion and intensity are morph targets, and both models on `main` already have them. So the avatar can show the question face and the emotion on top of the text cards before any body clip exists.
 - **Test with what's there:** `shared/sign_animation_map.json` lists test phrases whose signs all have clips ("Do you want more milk?", "I love you.", "What do you want to eat?", …).
-- **The backend doesn't change.** It keeps returning glosses from `vocab.json` (19 today). Until their clips arrive, those play as text cards.
+- **The backend doesn't change.** It keeps returning glosses from `vocab.json` (24 today, all animated).
 
 **When the animator delivers clips:**
 1. Name each word clip **exactly** like its gloss in `vocab.json`: uppercase, hyphens kept, e.g. `ALL-DONE`, `MILK`. Name letters `FS_A` … `FS_Z`.

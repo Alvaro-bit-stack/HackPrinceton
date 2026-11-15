@@ -1,6 +1,6 @@
 # How to animate signs on the glasses signer
 
-A handoff for whoever (person or AI) animates the next signs. **Done already:** all 19 vocabulary signs and `FS_A` … `FS_Z` are in `signer_glasses.glb` (section 0). The rest of this file records the rig's conventions and the method, so new signs match.
+A handoff for whoever (person or AI) animates the next signs. **Done already:** all 24 vocabulary signs and `FS_A` … `FS_Z` are in `signer_glasses.glb` (section 0). The rest of this file records the rig's conventions and the method, so new signs match.
 
 Everything here was done in Blender 5.2 through the Blender MCP server (`execute_blender_code`, which runs Python inside the open Blender). If you work another way, the Python still applies: paste it into Blender's Text Editor and run it.
 

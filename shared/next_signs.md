@@ -44,7 +44,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | boat | boat | Vehicles | 25.0 | 3.7 | open_b | Neutral / Neutral |
 | horse | horse | Animals | 25.0 | 3.52 | open_h | Head / Forehead |
 | duck | duck | Animals | 25.0 | 3.37 | flat_h | Head / Mouth |
-| your | your | Pronouns | 26.0 | 6.22 | 5 | Neutral / Neutral |
 | please | please | Games and Routines | 26.0 | 6.16 | open_b | Body / TorsoTop |
 | dont_want | dont want | Mental State Terms | 26.0 | 6.03 | curved_5 | Neutral / Neutral |
 | wait | wait | Action Signs | 26.0 | 5.88 | 5 | Neutral / Neutral |
@@ -69,7 +68,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | bear | bear | Animals | 26.0 | 3.12 | 5 | Body / TorsoTop |
 | crocodile | crocodile | Animals | 26.0 | 2.52 | curved_5 | Neutral / Neutral |
 | hello | hello | Games and Routines | 27.0 | 6.52 | closed_b | Head / Forehead |
-| school | school | Outside Things and Places to Go | 27.0 | 6.4 | 5 | Hand / Palm |
 | hug | hug | Action Signs | 27.0 | 6.15 | a | Body / TorsoTop |
 | walk | walk | Action Signs | 27.0 | 6.11 | open_b | Neutral / Neutral |
 | cook | cook | Action Signs | 27.0 | 6.08 | open_b | Hand / Palm |
@@ -463,7 +461,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | hose | hose | Outside Things and Places to Go | 46.0 | 2.84 | bent_l | Neutral / Neutral |
 | bowling | bowling | Games and Routines | 46.0 | 2.35 | curved_5 | Neutral / Neutral |
 | upset_1 | upset | Mental State Terms | 47.0 | 4.82 | closed_b | Body / TorsoBottom |
-| day | day | Signs About Time | 47.0 | 4.73 | 1 | Neutral / Neutral |
 | before | before | Signs About Time | 47.0 | 4.67 | flat_b | Hand / FingerFront |
 | then | then | Connecting Signs | 47.0 | 4.44 | 1 | Hand / FingerTip |
 | basement | basement | Furniture and Rooms | 47.0 | 2.87 | a | Hand / HandAway |
@@ -493,7 +490,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | high | high | Descriptive Signs | 52.0 | 4.4 | h | Neutral / Neutral |
 | eyes_awake | eyes awake, eyes_awake, all eyes | Action Signs | 52.0 | 4.32 | c | Head / Eye |
 | crazy | crazy, cuckoo, insane | Descriptive Signs | 52.0 | 2.96 | 1 | Head / Forehead |
-| how | how | Question Signs | 53.0 | 5.56 | c | Neutral / Neutral |
 | ticket | ticket | Small Household Items | 53.0 | 5.0 | bent_v | Hand / FingerUlnar |
 | our | our | Pronouns | 54.0 | 5.82 | flat_b | Body / TorsoTop |
 | when | when | Question Signs | 54.0 | 5.6 | 1 | Hand / HandAway |

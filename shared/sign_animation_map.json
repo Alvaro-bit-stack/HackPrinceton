@@ -406,6 +406,113 @@
     "UlnarRotation": "1"
    },
    "asl_lex_sign_ms": 868
+  },
+  {
+   "gloss": "FUTURE",
+   "clip": "FUTURE",
+   "clip_seconds": 1.208,
+   "asl_lex_entry": "future",
+   "mouthing": "future",
+   "phonology": {
+    "Handshape": "open_b",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Other",
+    "Movement": "Curved",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 567
+  },
+  {
+   "gloss": "SCHOOL",
+   "clip": "SCHOOL",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "school",
+   "mouthing": "school",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "AsymmetricalSameHandshape",
+    "NonDominantHandshape": "5",
+    "MajorLocation": "Hand",
+    "MinorLocation": "Palm",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 434
+  },
+  {
+   "gloss": "YOUR",
+   "clip": "YOUR",
+   "clip_seconds": 1,
+   "asl_lex_entry": "your",
+   "mouthing": "your",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 767
+  },
+  {
+   "gloss": "DAY",
+   "clip": "DAY",
+   "clip_seconds": 1.125,
+   "asl_lex_entry": "day",
+   "mouthing": "day",
+   "phonology": {
+    "Handshape": "1",
+    "SelectedFingers": "i",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Curved",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 400
+  },
+  {
+   "gloss": "HOW",
+   "clip": "HOW",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "how",
+   "mouthing": "how",
+   "phonology": {
+    "Handshape": "c",
+    "SelectedFingers": "imrp",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "c",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Curved",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 834
   }
  ],
  "letters": {
@@ -521,6 +628,7 @@
   {
    "english": "Mom will help you.",
    "signs": [
+    "FUTURE",
     "MOM",
     "HELP",
     "YOU"
@@ -542,6 +650,16 @@
     "SLEEP"
    ],
    "face": "statement"
+  },
+  {
+   "english": "How was your day at school?",
+   "signs": [
+    "SCHOOL",
+    "YOUR",
+    "DAY",
+    "HOW"
+   ],
+   "face": "wh-question"
   }
  ]
 }

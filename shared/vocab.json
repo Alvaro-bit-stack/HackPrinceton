@@ -17,5 +17,10 @@
   {"gloss": "MOM", "english": ["mom", "mommy", "mother"], "asl_lex": "mother"},
   {"gloss": "DAD", "english": ["dad", "daddy", "father"], "asl_lex": "father"},
   {"gloss": "DRINK", "english": ["drink", "drinks"], "asl_lex": "drink"},
-  {"gloss": "GIVE", "english": ["give", "gives"], "asl_lex": "give"}
+  {"gloss": "GIVE", "english": ["give", "gives"], "asl_lex": "give"},
+  {"gloss": "FUTURE", "english": ["future", "will"], "asl_lex": "future"},
+  {"gloss": "SCHOOL", "english": ["school"], "asl_lex": "school"},
+  {"gloss": "YOUR", "english": ["your", "yours"], "asl_lex": "your"},
+  {"gloss": "DAY", "english": ["day"], "asl_lex": "day"},
+  {"gloss": "HOW", "english": ["how"], "asl_lex": "how"}
 ]

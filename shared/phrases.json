@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "english": "How was your day at school?",
+    "signs": [
+      "SCHOOL",
+      "YOUR",
+      "DAY",
+      "HOW"
+    ],
+    "face": "wh-question",
+    "emotion": "neutral",
+    "meaning": "Asking the child how their school day went"
+  }
+]
