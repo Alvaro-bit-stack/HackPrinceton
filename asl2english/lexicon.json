@@ -1,0 +1,291 @@
+{
+ "credit": "ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://asl-lex.org, licensed CC BY-NC 4.0",
+ "features_total": 16,
+ "signs": {
+  "MILK": {
+   "asl_lex": "milk",
+   "translations": [
+    "dairy",
+    "milk"
+   ]
+  },
+  "MORE": {
+   "asl_lex": "more",
+   "translations": [
+    "more"
+   ]
+  },
+  "EAT": {
+   "asl_lex": "eat_1",
+   "translations": [
+    "food",
+    "consume",
+    "eat"
+   ]
+  },
+  "WATER": {
+   "asl_lex": "water",
+   "translations": [
+    "liquid",
+    "water"
+   ]
+  },
+  "SLEEP": {
+   "asl_lex": "sleep",
+   "translations": [
+    "asleep",
+    "go to bed",
+    "go to sleep",
+    "nap",
+    "sleep",
+    "sleepy"
+   ]
+  },
+  "HELP": {
+   "asl_lex": "help",
+   "translations": [
+    "assist",
+    "assistance",
+    "help"
+   ]
+  },
+  "ALL-DONE": {
+   "asl_lex": "finish",
+   "translations": [
+    "already",
+    "complete",
+    "completed",
+    "done",
+    "finish",
+    "over",
+    "that's all",
+    "that's enough"
+   ]
+  },
+  "WANT": {
+   "asl_lex": "want",
+   "translations": [
+    "want",
+    "wanted",
+    "wanting",
+    "wants"
+   ]
+  },
+  "YOU": {
+   "asl_lex": "you",
+   "translations": []
+  },
+  "ME": {
+   "asl_lex": "me",
+   "translations": []
+  },
+  "LOVE": {
+   "asl_lex": "love",
+   "translations": [
+    "hug",
+    "love"
+   ]
+  },
+  "WHAT": {
+   "asl_lex": "what_1",
+   "translations": [
+    "what"
+   ]
+  },
+  "YES": {
+   "asl_lex": "yes",
+   "translations": [
+    "yeah",
+    "yep",
+    "yes"
+   ]
+  },
+  "NO": {
+   "asl_lex": "no",
+   "translations": [
+    "don't",
+    "don't do that",
+    "no",
+    "no-no"
+   ]
+  },
+  "PLAY": {
+   "asl_lex": "play",
+   "translations": [
+    "goof off",
+    "party",
+    "play"
+   ]
+  },
+  "MOM": {
+   "asl_lex": "mother",
+   "translations": [
+    "mama",
+    "maternal",
+    "mom",
+    "mommy",
+    "mother"
+   ]
+  },
+  "DAD": {
+   "asl_lex": "father",
+   "translations": [
+    "dad",
+    "daddy",
+    "father",
+    "papa"
+   ]
+  },
+  "DRINK": {
+   "asl_lex": "drink",
+   "translations": [
+    "beverage",
+    "drink"
+   ]
+  },
+  "GIVE": {
+   "asl_lex": "give",
+   "translations": [
+    "give",
+    "give to"
+   ]
+  }
+ },
+ "look_alikes": [
+  [
+   "WANT",
+   "WHAT",
+   14
+  ],
+  [
+   "DAD",
+   "MOM",
+   13
+  ],
+  [
+   "ALL-DONE",
+   "WANT",
+   12
+  ],
+  [
+   "ALL-DONE",
+   "WHAT",
+   12
+  ],
+  [
+   "EAT",
+   "MORE",
+   11
+  ],
+  [
+   "ME",
+   "YOU",
+   11
+  ],
+  [
+   "MILK",
+   "YES",
+   11
+  ],
+  [
+   "MORE",
+   "WHAT",
+   11
+  ],
+  [
+   "ALL-DONE",
+   "PLAY",
+   10
+  ],
+  [
+   "DAD",
+   "EAT",
+   10
+  ],
+  [
+   "DAD",
+   "WHAT",
+   10
+  ],
+  [
+   "EAT",
+   "MOM",
+   10
+  ],
+  [
+   "EAT",
+   "WATER",
+   10
+  ],
+  [
+   "MOM",
+   "WHAT",
+   10
+  ],
+  [
+   "ALL-DONE",
+   "GIVE",
+   9
+  ],
+  [
+   "DRINK",
+   "EAT",
+   9
+  ],
+  [
+   "DRINK",
+   "GIVE",
+   9
+  ],
+  [
+   "DRINK",
+   "SLEEP",
+   9
+  ],
+  [
+   "GIVE",
+   "MORE",
+   9
+  ],
+  [
+   "MILK",
+   "NO",
+   9
+  ],
+  [
+   "MOM",
+   "WATER",
+   9
+  ],
+  [
+   "MORE",
+   "WANT",
+   9
+  ],
+  [
+   "MORE",
+   "YES",
+   9
+  ],
+  [
+   "PLAY",
+   "WHAT",
+   9
+  ],
+  [
+   "SLEEP",
+   "WANT",
+   9
+  ],
+  [
+   "WHAT",
+   "YES",
+   9
+  ],
+  [
+   "YES",
+   "YOU",
+   9
+  ]
+ ]
+}
