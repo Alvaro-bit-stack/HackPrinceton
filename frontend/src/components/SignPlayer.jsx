@@ -134,9 +134,10 @@ const tmpQ = new THREE.Quaternion(), tmpQ2 = new THREE.Quaternion(), tmpV = new 
 function scaleRotation(q, rest, k) {
   tmpQ.copy(rest).invert().multiply(q);
   if (tmpQ.w < 0) tmpQ.set(-tmpQ.x, -tmpQ.y, -tmpQ.z, -tmpQ.w);
-  const angle = 2 * Math.acos(Math.min(1, tmpQ.w));
-  const s = Math.sqrt(1 - tmpQ.w * tmpQ.w);
+  const w = Math.min(1, tmpQ.w); // rounding can push w just past 1 for a bone at rest; unclamped, sqrt gives NaN and the arm vanishes
+  const s = Math.sqrt(1 - w * w);
   if (s < 1e-4) return;
+  const angle = 2 * Math.acos(w);
   tmpV.set(tmpQ.x / s, tmpQ.y / s, tmpQ.z / s);
   tmpQ.setFromAxisAngle(tmpV, angle * k);
   q.copy(rest).multiply(tmpQ);
