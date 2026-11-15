@@ -149,6 +149,63 @@
     "give",
     "give to"
    ]
+  },
+  "FUTURE": {
+   "asl_lex": "future",
+   "translations": [
+    "eventually",
+    "future",
+    "someday",
+    "will"
+   ]
+  },
+  "SCHOOL": {
+   "asl_lex": "school",
+   "translations": [
+    "academic",
+    "campus",
+    "education",
+    "school"
+   ]
+  },
+  "YOUR": {
+   "asl_lex": "your",
+   "translations": []
+  },
+  "DAY": {
+   "asl_lex": "day",
+   "translations": [
+    "day",
+    "daytime"
+   ]
+  },
+  "HOW": {
+   "asl_lex": "how",
+   "translations": [
+    "how",
+    "manner",
+    "type"
+   ]
+  },
+  "DO-DO": {
+   "asl_lex": "do_do",
+   "translations": [
+    "do",
+    "what",
+    "what do"
+   ]
+  },
+  "THINK-ABOUT": {
+   "asl_lex": "wonder",
+   "translations": [
+    "consider",
+    "contemplate",
+    "ponder",
+    "thinking",
+    "think about",
+    "thoughts",
+    "wonder"
+   ]
   }
  },
  "look_alikes": [
@@ -163,6 +220,21 @@
    13
   ],
   [
+   "DAY",
+   "YOU",
+   13
+  ],
+  [
+   "WANT",
+   "YOUR",
+   13
+  ],
+  [
+   "WHAT",
+   "YOUR",
+   13
+  ],
+  [
    "ALL-DONE",
    "WANT",
    12
@@ -173,7 +245,32 @@
    12
   ],
   [
+   "ALL-DONE",
+   "YOUR",
+   11
+  ],
+  [
+   "DAD",
+   "SCHOOL",
+   11
+  ],
+  [
+   "DRINK",
+   "FUTURE",
+   11
+  ],
+  [
    "EAT",
+   "MORE",
+   11
+  ],
+  [
+   "GIVE",
+   "HOW",
+   11
+  ],
+  [
+   "HOW",
    "MORE",
    11
   ],
@@ -188,9 +285,24 @@
    11
   ],
   [
+   "MOM",
+   "SCHOOL",
+   11
+  ],
+  [
    "MORE",
    "WHAT",
    11
+  ],
+  [
+   "SCHOOL",
+   "WHAT",
+   11
+  ],
+  [
+   "ALL-DONE",
+   "HOW",
+   10
   ],
   [
    "ALL-DONE",
@@ -208,6 +320,26 @@
    10
   ],
   [
+   "DAD",
+   "YOUR",
+   10
+  ],
+  [
+   "DAY",
+   "ME",
+   10
+  ],
+  [
+   "DAY",
+   "THINK-ABOUT",
+   10
+  ],
+  [
+   "DAY",
+   "YOUR",
+   10
+  ],
+  [
    "EAT",
    "MOM",
    10
@@ -218,13 +350,48 @@
    10
   ],
   [
+   "FUTURE",
+   "YOUR",
+   10
+  ],
+  [
+   "GIVE",
+   "YOUR",
+   10
+  ],
+  [
    "MOM",
    "WHAT",
    10
   ],
   [
+   "MOM",
+   "YOUR",
+   10
+  ],
+  [
+   "THINK-ABOUT",
+   "YOU",
+   10
+  ],
+  [
+   "YOU",
+   "YOUR",
+   10
+  ],
+  [
    "ALL-DONE",
    "GIVE",
+   9
+  ],
+  [
+   "DAD",
+   "FUTURE",
+   9
+  ],
+  [
+   "DO-DO",
+   "PLAY",
    9
   ],
   [
@@ -239,12 +406,57 @@
   ],
   [
    "DRINK",
+   "HOW",
+   9
+  ],
+  [
+   "DRINK",
+   "SLEEP",
+   9
+  ],
+  [
+   "DRINK",
+   "YOUR",
+   9
+  ],
+  [
+   "FUTURE",
+   "GIVE",
+   9
+  ],
+  [
+   "FUTURE",
+   "MOM",
+   9
+  ],
+  [
+   "FUTURE",
    "SLEEP",
    9
   ],
   [
    "GIVE",
    "MORE",
+   9
+  ],
+  [
+   "HOW",
+   "WANT",
+   9
+  ],
+  [
+   "HOW",
+   "WHAT",
+   9
+  ],
+  [
+   "HOW",
+   "YOUR",
+   9
+  ],
+  [
+   "ME",
+   "THINK-ABOUT",
    9
   ],
   [
@@ -268,13 +480,33 @@
    9
   ],
   [
+   "MORE",
+   "YOUR",
+   9
+  ],
+  [
    "PLAY",
    "WHAT",
    9
   ],
   [
+   "SCHOOL",
+   "WANT",
+   9
+  ],
+  [
+   "SCHOOL",
+   "YOUR",
+   9
+  ],
+  [
    "SLEEP",
    "WANT",
+   9
+  ],
+  [
+   "SLEEP",
+   "YOUR",
    9
   ],
   [
@@ -285,6 +517,11 @@
   [
    "YES",
    "YOU",
+   9
+  ],
+  [
+   "YES",
+   "YOUR",
    9
   ]
  ]

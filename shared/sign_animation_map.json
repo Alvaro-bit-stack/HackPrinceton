@@ -540,7 +540,7 @@
    "gloss": "THINK-ABOUT",
    "clip": "THINK-ABOUT",
    "clip_seconds": 1.792,
-   "asl_lex_entry": "think_over",
+   "asl_lex_entry": "wonder",
    "mouthing": "think",
    "phonology": {
     "Handshape": "1",
@@ -549,14 +549,14 @@
     "ThumbPosition": "Closed",
     "SignType": "OneHanded",
     "MajorLocation": "Head",
-    "MinorLocation": "Forehead",
-    "Movement": "None",
-    "RepeatedMovement": "0",
+    "MinorLocation": "HeadAway",
+    "Movement": "Circular",
+    "RepeatedMovement": "1",
     "Contact": "0",
     "UlnarRotation": "0"
    },
-   "asl_lex_sign_ms": 1502,
-   "note": "THINK with repeated circles at the temple (think it over); ASL-LEX think_over"
+   "asl_lex_sign_ms": 634,
+   "note": "THINK with repeated circles at the temple (think it over); ASL-LEX wonder (Sign Bank: consider, ponder, think about)"
   }
  ],
  "letters": {
