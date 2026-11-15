@@ -554,6 +554,10 @@ def test_routes():
             assert c.post("/translate", json={"text": "milk", "speaker": "Bad Id"}).status_code == 422
             assert c.post("/translate", json={"text": "milk", "speaker": "mom"}).json()["new_signs"] == ["MILK"]
             assert c.post("/translate", json={"text": "milk"}).json()["new_signs"] == []
+        # the deployed frontend may call the API; a random site may not
+        allowed = lambda o: c.get("/health", headers={"Origin": o}).headers.get("access-control-allow-origin") == o
+        assert allowed("http://localhost:5173") and allowed("https://hack-princeton-mu.vercel.app")
+        assert not allowed("https://evil.example")
 
 
 def run():

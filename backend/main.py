@@ -3,6 +3,7 @@
 Run from the repo root:  uvicorn backend.main:app --reload --port 8000
 """
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -19,7 +20,11 @@ from backend.translate import MAX_FRAME_CHARS, MAX_FRAMES, VOCAB, translate
 from ml.recognizer import predict
 
 app = FastAPI(title="HackPrinceton sign bridge")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_methods=["*"], allow_headers=["*"])
+# local dev plus the deployed frontend; set ALLOWED_ORIGINS (comma-separated) on the host to change the deployed list
+ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"] + [
+    o.strip().rstrip("/") for o in os.getenv("ALLOWED_ORIGINS", "https://hack-princeton-mu.vercel.app").split(",") if o.strip()
+]
+app.add_middleware(CORSMiddleware, allow_origins=ORIGINS, allow_methods=["*"], allow_headers=["*"])
 
 
 Emotion = Literal["neutral", "happy", "sad", "angry", "surprised", "worried"]
