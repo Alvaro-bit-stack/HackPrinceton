@@ -557,6 +557,72 @@
    },
    "asl_lex_sign_ms": 634,
    "note": "THINK with repeated circles at the temple (think it over); ASL-LEX wonder (Sign Bank: consider, ponder, think about)"
+  },
+  {
+   "gloss": "THINK",
+   "clip": "THINK",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "think",
+   "mouthing": "think",
+   "phonology": {
+    "Handshape": "flat_1",
+    "SelectedFingers": "i",
+    "Flexion": "Flat",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Forehead",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 968
+  },
+  {
+   "gloss": "ABOUT",
+   "clip": "ABOUT",
+   "clip_seconds": 1.25,
+   "asl_lex_entry": "about_2",
+   "mouthing": "about",
+   "phonology": {
+    "Handshape": "1",
+    "SelectedFingers": "i",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Closed",
+    "SignType": "AsymmetricalDifferentHandshape",
+    "NonDominantHandshape": "O",
+    "MajorLocation": "Hand",
+    "MinorLocation": "HandAway",
+    "Movement": "Circular",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 934
+  },
+  {
+   "gloss": "DID",
+   "clip": "DID",
+   "clip_seconds": 1.292,
+   "asl_lex_entry": "do_do",
+   "mouthing": "did",
+   "phonology": {
+    "Handshape": "d",
+    "SelectedFingers": "m",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "1",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 1068,
+   "note": "same motion as DO-DO; ASL has no separate past-tense DID"
   }
  ],
  "letters": {
@@ -714,6 +780,18 @@
    ],
    "face": "statement",
    "note": "topic first (what you did), then THINK-ABOUT; DO-DO covers 'did what'. A literal YOU THINK ABOUT YOU DID WHAT is English order and the final WHAT would read as a real question."
+  },
+  {
+   "english": "Think about what you did. (as the AI glossed it)",
+   "signs": [
+    "THINK",
+    "ABOUT",
+    "YOU",
+    "DID",
+    "WHAT"
+   ],
+   "face": "wh-question",
+   "note": "added for the demo; English word order, see the YOU DO-DO THINK-ABOUT entry for the ASL-style version"
   }
  ]
 }

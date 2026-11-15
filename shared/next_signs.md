@@ -390,7 +390,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | cowboy | cowboy | People | 40.0 | 1.28 | 3 | Body / Hips |
 | long | long | Descriptive Signs | 41.0 | 5.96 | 1 | Arm / ForearmBack |
 | restaurant | restaurant | Outside Things and Places to Go | 41.0 | 5.89 | r | Head / Mouth |
-| think | think | Mental State Terms | 41.0 | 5.87 | flat_1 | Head / Forehead |
 | full | full | Descriptive Signs | 41.0 | 5.85 | open_b | Hand / FingerRadial |
 | first | first, one, one dollar | Descriptive Signs | 41.0 | 5.77 | 1 | Neutral / Neutral |
 | chat | chat | Action Signs | 41.0 | 5.5 | open_b | Neutral / Neutral |
@@ -511,7 +510,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | country | country | Outside Things and Places to Go | 59.0 | 3.9 | y | Arm / ElbowBack |
 | each | each | Quantifiers | 60.0 | 5.22 | a | Hand / Heel |
 | so | so | Connecting Signs | 61.0 | 5.63 | s | Neutral / Neutral |
-| about_2 | about | Prepositions and Locations | 61.0 | 3.52 | 1 | Hand / HandAway |
 | radio | radio | Small Household Items | 67.0 | 2.58 | curved_5 | Head / HeadAway |
 | fall_1 | fall | Action Signs |  | 4.68 | closed_b | Arm / ForearmUlnar |
 | fit | fit, perfect, precise | Action Signs |  | 4.34 | curved_5 | Neutral / Neutral |

@@ -23,6 +23,9 @@
   {"gloss": "YOUR", "english": ["your", "yours"], "asl_lex": "your"},
   {"gloss": "DAY", "english": ["day"], "asl_lex": "day"},
   {"gloss": "HOW", "english": ["how"], "asl_lex": "how"},
-  {"gloss": "DO-DO", "english": ["did", "doing"], "asl_lex": "do_do"},
-  {"gloss": "THINK-ABOUT", "english": ["think", "wonder", "consider"], "asl_lex": "wonder"}
+  {"gloss": "DO-DO", "english": ["doing"], "asl_lex": "do_do"},
+  {"gloss": "THINK-ABOUT", "english": ["wonder", "consider", "ponder"], "asl_lex": "wonder"},
+  {"gloss": "THINK", "english": ["think", "thought"], "asl_lex": "think"},
+  {"gloss": "ABOUT", "english": ["about"], "asl_lex": "about_2"},
+  {"gloss": "DID", "english": ["did"], "asl_lex": "do_do"}
 ]

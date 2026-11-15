@@ -206,6 +206,32 @@
     "thoughts",
     "wonder"
    ]
+  },
+  "THINK": {
+   "asl_lex": "think",
+   "translations": [
+    "brain",
+    "mind",
+    "remember",
+    "think",
+    "thought"
+   ]
+  },
+  "ABOUT": {
+   "asl_lex": "about_2",
+   "translations": [
+    "about",
+    "regarding",
+    "with reference to"
+   ]
+  },
+  "DID": {
+   "asl_lex": "do_do",
+   "translations": [
+    "do",
+    "what",
+    "what do"
+   ]
   }
  },
  "look_alikes": [
@@ -272,6 +298,11 @@
   [
    "HOW",
    "MORE",
+   11
+  ],
+  [
+   "ME",
+   "THINK",
    11
   ],
   [
@@ -370,6 +401,11 @@
    10
   ],
   [
+   "THINK",
+   "YOU",
+   10
+  ],
+  [
    "THINK-ABOUT",
    "YOU",
    10
@@ -378,6 +414,11 @@
    "YOU",
    "YOUR",
    10
+  ],
+  [
+   "ABOUT",
+   "ME",
+   9
   ],
   [
    "ALL-DONE",
@@ -390,7 +431,12 @@
    9
   ],
   [
-   "DO-DO",
+   "DAY",
+   "THINK",
+   9
+  ],
+  [
+   "DID",
    "PLAY",
    9
   ],
@@ -507,6 +553,11 @@
   [
    "SLEEP",
    "YOUR",
+   9
+  ],
+  [
+   "THINK",
+   "THINK-ABOUT",
    9
   ],
   [
