@@ -1,4 +1,4 @@
-# Sign Bridge (HackPrinceton, Education track)
+# Manibus (HackPrinceton, Education track)
 
 Helps hearing parents give their deaf child sign language at home.
 
