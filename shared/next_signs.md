@@ -310,7 +310,6 @@ Source: ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://as
 | lightning | lightning | Outside Things and Places to Go | 35.0 | 3.04 | 1 | Neutral / Neutral |
 | rooster | rooster | Animals | 35.0 | 2.67 | 3 | Head / Forehead |
 | turkey | turkey | Animals | 35.0 | 2.5 | g | Head / CheekNose |
-| do_do | do do | Question Signs | 36.0 | 6.4 | d | Neutral / Neutral |
 | new | new | Descriptive Signs | 36.0 | 5.6 | c | Hand / Palm |
 | dark_1 | dark | Descriptive Signs | 36.0 | 5.6 | 5 | Neutral / Neutral |
 | make | make | Action Signs | 36.0 | 5.57 | s | Neutral / Neutral |

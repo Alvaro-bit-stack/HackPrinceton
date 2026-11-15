@@ -10,5 +10,15 @@
     "face": "wh-question",
     "emotion": "neutral",
     "meaning": "Asking the child how their school day went"
+  },
+  {
+    "english": "Think about what you did.",
+    "signs": [
+      "YOU",
+      "DO-DO",
+      "THINK-ABOUT"
+    ],
+    "face": "statement",
+    "meaning": "Asking the child to reflect on their behavior"
   }
 ]

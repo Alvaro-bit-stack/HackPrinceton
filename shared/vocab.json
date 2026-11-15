@@ -22,5 +22,7 @@
   {"gloss": "SCHOOL", "english": ["school"], "asl_lex": "school"},
   {"gloss": "YOUR", "english": ["your", "yours"], "asl_lex": "your"},
   {"gloss": "DAY", "english": ["day"], "asl_lex": "day"},
-  {"gloss": "HOW", "english": ["how"], "asl_lex": "how"}
+  {"gloss": "HOW", "english": ["how"], "asl_lex": "how"},
+  {"gloss": "DO-DO", "english": ["did", "doing"], "asl_lex": "do_do"},
+  {"gloss": "THINK-ABOUT", "english": ["think", "wonder", "consider"], "asl_lex": "think_over"}
 ]

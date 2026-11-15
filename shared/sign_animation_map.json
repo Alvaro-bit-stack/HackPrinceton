@@ -513,6 +513,50 @@
     "UlnarRotation": "1"
    },
    "asl_lex_sign_ms": 834
+  },
+  {
+   "gloss": "DO-DO",
+   "clip": "DO-DO",
+   "clip_seconds": 1.292,
+   "asl_lex_entry": "do_do",
+   "mouthing": "do (pucker)",
+   "phonology": {
+    "Handshape": "d",
+    "SelectedFingers": "m",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "1",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 1068
+  },
+  {
+   "gloss": "THINK-ABOUT",
+   "clip": "THINK-ABOUT",
+   "clip_seconds": 1.792,
+   "asl_lex_entry": "think_over",
+   "mouthing": "think",
+   "phonology": {
+    "Handshape": "1",
+    "SelectedFingers": "i",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Forehead",
+    "Movement": "None",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 1502,
+   "note": "THINK with repeated circles at the temple (think it over); ASL-LEX think_over"
   }
  ],
  "letters": {
@@ -660,6 +704,16 @@
     "HOW"
    ],
    "face": "wh-question"
+  },
+  {
+   "english": "Think about what you did.",
+   "signs": [
+    "YOU",
+    "DO-DO",
+    "THINK-ABOUT"
+   ],
+   "face": "statement",
+   "note": "topic first (what you did), then THINK-ABOUT; DO-DO covers 'did what'. A literal YOU THINK ABOUT YOU DID WHAT is English order and the final WHAT would read as a real question."
   }
  ]
 }
