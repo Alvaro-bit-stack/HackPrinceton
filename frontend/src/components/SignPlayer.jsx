@@ -11,7 +11,9 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 const DEFAULT_AVATAR = "signer_tshirt";
 const SIGN_SECONDS = 1.0; // a text card for a sign with no clip
 const LETTER_SECONDS = 0.45; // one fingerspelled letter with no clip
-const CROSSFADE = 0.15;
+const CROSSFADE = 0.2;
+const LONG_FADE = 0.3; // into or out of fingerspelling: the hand travels between the ready pose and the shoulder
+const TRIM = 5 / 24; // word clips walk to and from the ready pose; between two clips skip most of that walk and let the crossfade bridge sign to sign
 const EASE = 0.05; // face eases with this time constant (~150 ms to settle)
 const HEAD_TILT = 0.12; // radians, slight forward tilt on questions
 
@@ -80,6 +82,12 @@ function buildSteps(signs, clips) {
     });
     i++;
   }
+  steps.forEach((s, k) => {
+    if (s.kind !== "clip" || s.letter) return; // letter clips are short holds, played whole
+    const trim = Math.min(TRIM, s.clip.duration / 4);
+    s.start = steps[k - 1]?.kind === "clip" ? trim : 0;
+    s.duration = s.clip.duration - s.start - (steps[k + 1]?.kind === "clip" ? trim : 0);
+  });
   return steps;
 }
 
@@ -206,8 +214,8 @@ export default function SignPlayer({
       const model = cloneSkinned(gltf.scene);
       const mixer = new THREE.AnimationMixer(model);
       const clips = new Map(gltf.animations.map((c) => [c.name, c]));
-      // Rest pose: the first frame of the first clip (some exports rest in a T-pose).
-      const idle = mixer.clipAction(restPoseClip(gltf.animations[0]));
+      // Rest pose: the first frame of the first word clip (some exports rest in a T-pose; letter clips start with the hand raised).
+      const idle = mixer.clipAction(restPoseClip(gltf.animations.find((c) => !c.name.startsWith("FS_")) || gltf.animations[0]));
       idle.play();
       mixer.update(0);
       model.updateMatrixWorld(true);
@@ -241,8 +249,9 @@ export default function SignPlayer({
   function toIdle(e) {
     if (!e.mixer || e.current === e.idle) return;
     e.idle.reset().play();
-    e.current.crossFadeTo(e.idle, CROSSFADE, false);
+    e.current.crossFadeTo(e.idle, e.spelling ? LONG_FADE : CROSSFADE, false);
     e.current = e.idle;
+    e.spelling = false;
   }
 
   function enter(idx) {
@@ -256,11 +265,14 @@ export default function SignPlayer({
     if (s.kind === "card") return toIdle(e);
     const action = e.mixer.clipAction(s.clip);
     action.reset();
+    action.time = s.start || 0;
     action.setLoop(THREE.LoopOnce, 1);
     action.clampWhenFinished = true;
     action.play();
-    if (e.current !== action) e.current.crossFadeTo(action, CROSSFADE, false);
+    const spelling = Boolean(s.letter);
+    if (e.current !== action) e.current.crossFadeTo(action, spelling !== Boolean(e.spelling) ? LONG_FADE : CROSSFADE, false);
     e.current = action;
+    e.spelling = spelling;
   }
 
   function tick(dt) {

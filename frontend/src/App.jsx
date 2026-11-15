@@ -6,8 +6,8 @@ import Home from "./pages/Home.jsx";
 
 const PAGES = { Home, Speak: Translator, Read: Reader, Practice: Learn };
 const AVATARS = [
+  { id: "signer_glasses", name: "Glasses" }, // first = default: it has a clip for every vocab sign and A-Z
   { id: "signer_tshirt", name: "T-shirt" },
-  { id: "signer_glasses", name: "Glasses" },
 ];
 
 export default function App() {

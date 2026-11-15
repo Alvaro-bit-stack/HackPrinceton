@@ -194,9 +194,9 @@ We plan to switch to Gemini; that's one small addition in `backend/llm.py`.
 
 **Avatars:**
 - `avatar` prop → load `frontend/public/models/<avatar>.glb`.
-- All avatars share the same 43-bone skeleton, so any clip plays on any avatar.
+- All avatars share the same 43 bone names, but a clip stores rotations relative to its own rig's rest pose, so a clip only plays correctly on an avatar it was made or retargeted for.
 
-**Current state on `main`:** `signer_tshirt.glb` has one whole-sentence clip (`YOU_WANT_MORE_MILK`) and `signer_glasses.glb` has `YOU_WANT_MILK`. They prove the look, but they are **not per-sign clips yet**. Splitting them into `YOU` / `WANT` / `MORE` / `MILK` is the first animation task.
+**Current state:** `signer_glasses.glb` (the default avatar) has a clip for **every gloss in `vocab.json`** plus `FS_A` … `FS_Z`, so every sentence the backend can return plays fully animated, and unknown words are fingerspelled. `signer_tshirt.glb` still has only its whole-sentence clip (`YOU_WANT_MORE_MILK`). The clips are posed for the glasses rig and haven't been retargeted to it. Its rest pose differs (arms down, not a T-pose), so they won't play correctly on it as they are.
 
 ### 5a. Wiring before the animations exist
 
@@ -206,7 +206,7 @@ The plan is to animate **all 26 letters plus common words** chosen from the data
 - **A missing word clip shows the word.** If a gloss has no clip, show the gloss as a text card for about the length of a sign (the current placeholder `SignPlayer` already does this), then move on. Don't throw and don't stall the sequence.
 - **Missing letter clips show the letters.** For `known: false`, play `FS_<letter>` clips where they exist; otherwise show the letters one at a time.
 - **The face works with no clips at all.** Brows, emotion and intensity are morph targets, and both models on `main` already have them. So the avatar can show the question face and the emotion on top of the text cards before any body clip exists.
-- **Test with what's there:** the whole-sentence clips (`YOU_WANT_MORE_MILK`, `YOU_WANT_MILK`) are enough to test loading, the mixer and the face layer.
+- **Test with what's there:** `shared/sign_animation_map.json` lists test phrases whose signs all have clips ("Do you want more milk?", "I love you.", "What do you want to eat?", …).
 - **The backend doesn't change.** It keeps returning glosses from `vocab.json` (19 today). Until their clips arrive, those play as text cards.
 
 **When the animator delivers clips:**

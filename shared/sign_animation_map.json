@@ -1,0 +1,547 @@
+{
+ "about": "How each vocabulary sign was animated on signer_glasses.glb. Handshape, location, movement, repetition, contact and timing come from ASL-LEX phonology coding (signdata.csv); each clip starts and ends in the same ready pose so clips chain. Letters FS_A..FS_Z hold the handshape at the right shoulder.",
+ "credit": "ASL-LEX 2.0, Sehyr, Caselli, Cohen-Goldberg & Emmorey (2021), https://asl-lex.org, licensed CC BY-NC 4.0",
+ "review": "Animated from the coding and reference videos, not checked by a fluent signer yet.",
+ "signs": [
+  {
+   "gloss": "MILK",
+   "clip": "MILK",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "milk",
+   "mouthing": "milk",
+   "phonology": {
+    "Handshape": "s",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyClosed",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "1",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 534
+  },
+  {
+   "gloss": "MORE",
+   "clip": "MORE",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "more",
+   "mouthing": "more",
+   "phonology": {
+    "Handshape": "o",
+    "SelectedFingers": "imrp",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "o",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 434
+  },
+  {
+   "gloss": "EAT",
+   "clip": "EAT",
+   "clip_seconds": 1.25,
+   "asl_lex_entry": "eat_1",
+   "mouthing": "eat",
+   "phonology": {
+    "Handshape": "o",
+    "SelectedFingers": "imrp",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Mouth",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 400
+  },
+  {
+   "gloss": "WATER",
+   "clip": "WATER",
+   "clip_seconds": 1.25,
+   "asl_lex_entry": "water",
+   "mouthing": "water",
+   "phonology": {
+    "Handshape": "w",
+    "SelectedFingers": "p",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Chin",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 367
+  },
+  {
+   "gloss": "SLEEP",
+   "clip": "SLEEP",
+   "clip_seconds": 1.417,
+   "asl_lex_entry": "sleep",
+   "mouthing": "sleep (eyes close)",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "HeadAway",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 367
+  },
+  {
+   "gloss": "HELP",
+   "clip": "HELP",
+   "clip_seconds": 1.25,
+   "asl_lex_entry": "help",
+   "mouthing": "help",
+   "phonology": {
+    "Handshape": "a",
+    "SelectedFingers": "t",
+    "ThumbPosition": "Open",
+    "SignType": "AsymmetricalDifferentHandshape",
+    "NonDominantHandshape": "B",
+    "MajorLocation": "Hand",
+    "MinorLocation": "Palm",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 868
+  },
+  {
+   "gloss": "ALL-DONE",
+   "clip": "ALL-DONE",
+   "clip_seconds": 1.083,
+   "asl_lex_entry": "finish",
+   "mouthing": "all done",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "5",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 367
+  },
+  {
+   "gloss": "WANT",
+   "clip": "WANT",
+   "clip_seconds": 1.208,
+   "asl_lex_entry": "want",
+   "mouthing": "want",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "5",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 968
+  },
+  {
+   "gloss": "YOU",
+   "clip": "YOU",
+   "clip_seconds": 1.042,
+   "asl_lex_entry": "you",
+   "mouthing": "you",
+   "phonology": {
+    "Handshape": "1",
+    "SelectedFingers": "i",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 567
+  },
+  {
+   "gloss": "ME",
+   "clip": "ME",
+   "clip_seconds": 1,
+   "asl_lex_entry": "me",
+   "mouthing": "me",
+   "phonology": {
+    "Handshape": "1",
+    "SelectedFingers": "i",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Body",
+    "MinorLocation": "TorsoTop",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 334
+  },
+  {
+   "gloss": "LOVE",
+   "clip": "LOVE",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "love",
+   "mouthing": "love",
+   "phonology": {
+    "Handshape": "a",
+    "SelectedFingers": "t",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "a",
+    "MajorLocation": "Body",
+    "MinorLocation": "TorsoTop",
+    "Movement": "None",
+    "RepeatedMovement": "0",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 734
+  },
+  {
+   "gloss": "WHAT",
+   "clip": "WHAT",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "what_1",
+   "mouthing": "what",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "5",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 1001
+  },
+  {
+   "gloss": "YES",
+   "clip": "YES",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "yes",
+   "mouthing": "yes (head nods)",
+   "phonology": {
+    "Handshape": "s",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyClosed",
+    "ThumbPosition": "Closed",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 767
+  },
+  {
+   "gloss": "NO",
+   "clip": "NO",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "no",
+   "mouthing": "no (head shakes)",
+   "phonology": {
+    "Handshape": "flat_h",
+    "SelectedFingers": "im",
+    "Flexion": "Flat",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "1",
+    "Contact": "0",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 434
+  },
+  {
+   "gloss": "PLAY",
+   "clip": "PLAY",
+   "clip_seconds": 1.167,
+   "asl_lex_entry": "play",
+   "mouthing": "play",
+   "phonology": {
+    "Handshape": "y",
+    "SelectedFingers": "p",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "SymmetricalOrAlternating",
+    "NonDominantHandshape": "y",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "None",
+    "RepeatedMovement": "1",
+    "Contact": "0",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 501
+  },
+  {
+   "gloss": "MOM",
+   "clip": "MOM",
+   "clip_seconds": 1.208,
+   "asl_lex_entry": "mother",
+   "mouthing": "mom",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Chin",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 334
+  },
+  {
+   "gloss": "DAD",
+   "clip": "DAD",
+   "clip_seconds": 1.208,
+   "asl_lex_entry": "father",
+   "mouthing": "dad",
+   "phonology": {
+    "Handshape": "5",
+    "SelectedFingers": "imrp",
+    "Flexion": "FullyOpen",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "Forehead",
+    "Movement": "Straight",
+    "RepeatedMovement": "1",
+    "Contact": "1",
+    "UlnarRotation": "0"
+   },
+   "asl_lex_sign_ms": 267
+  },
+  {
+   "gloss": "DRINK",
+   "clip": "DRINK",
+   "clip_seconds": 1.208,
+   "asl_lex_entry": "drink",
+   "mouthing": "drink",
+   "phonology": {
+    "Handshape": "c",
+    "SelectedFingers": "imrp",
+    "Flexion": "Curved",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Head",
+    "MinorLocation": "HeadAway",
+    "Movement": "Straight",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 300
+  },
+  {
+   "gloss": "GIVE",
+   "clip": "GIVE",
+   "clip_seconds": 1.25,
+   "asl_lex_entry": "give",
+   "mouthing": "give",
+   "phonology": {
+    "Handshape": "flat_o",
+    "SelectedFingers": "imrp",
+    "Flexion": "Flat",
+    "ThumbPosition": "Open",
+    "SignType": "OneHanded",
+    "MajorLocation": "Neutral",
+    "MinorLocation": "Neutral",
+    "Movement": "Curved",
+    "RepeatedMovement": "0",
+    "Contact": "0",
+    "UlnarRotation": "1"
+   },
+   "asl_lex_sign_ms": 868
+  }
+ ],
+ "letters": {
+  "clips": [
+   "FS_A",
+   "FS_B",
+   "FS_C",
+   "FS_D",
+   "FS_E",
+   "FS_F",
+   "FS_G",
+   "FS_H",
+   "FS_I",
+   "FS_J",
+   "FS_K",
+   "FS_L",
+   "FS_M",
+   "FS_N",
+   "FS_O",
+   "FS_P",
+   "FS_Q",
+   "FS_R",
+   "FS_S",
+   "FS_T",
+   "FS_U",
+   "FS_V",
+   "FS_W",
+   "FS_X",
+   "FS_Y",
+   "FS_Z"
+  ],
+  "seconds": {
+   "FS_A": 0.5,
+   "FS_B": 0.5,
+   "FS_C": 0.5,
+   "FS_D": 0.5,
+   "FS_E": 0.5,
+   "FS_F": 0.5,
+   "FS_G": 0.5,
+   "FS_H": 0.5,
+   "FS_I": 0.5,
+   "FS_J": 0.75,
+   "FS_K": 0.5,
+   "FS_L": 0.5,
+   "FS_M": 0.5,
+   "FS_N": 0.5,
+   "FS_O": 0.5,
+   "FS_P": 0.5,
+   "FS_Q": 0.5,
+   "FS_R": 0.5,
+   "FS_S": 0.5,
+   "FS_T": 0.5,
+   "FS_U": 0.5,
+   "FS_V": 0.5,
+   "FS_W": 0.5,
+   "FS_X": 0.5,
+   "FS_Y": 0.5,
+   "FS_Z": 0.833
+  },
+  "approximate": {
+   "M": "thumb hidden, reads close to S",
+   "N": "thumb hidden, reads close to S",
+   "T": "thumb hidden, reads close to S"
+  }
+ },
+ "test_phrases": [
+  {
+   "english": "Do you want more milk?",
+   "signs": [
+    "YOU",
+    "WANT",
+    "MORE",
+    "MILK"
+   ],
+   "face": "yes-no-question"
+  },
+  {
+   "english": "I love you.",
+   "signs": [
+    "ME",
+    "LOVE",
+    "YOU"
+   ],
+   "face": "statement"
+  },
+  {
+   "english": "Do you want water?",
+   "signs": [
+    "YOU",
+    "WANT",
+    "WATER"
+   ],
+   "face": "yes-no-question"
+  },
+  {
+   "english": "Are you all done?",
+   "signs": [
+    "YOU",
+    "ALL-DONE"
+   ],
+   "face": "yes-no-question"
+  },
+  {
+   "english": "What do you want to eat?",
+   "signs": [
+    "YOU",
+    "WANT",
+    "EAT",
+    "WHAT"
+   ],
+   "face": "wh-question"
+  },
+  {
+   "english": "Mom will help you.",
+   "signs": [
+    "MOM",
+    "HELP",
+    "YOU"
+   ],
+   "face": "statement"
+  },
+  {
+   "english": "Do you want to play?",
+   "signs": [
+    "YOU",
+    "WANT",
+    "PLAY"
+   ],
+   "face": "yes-no-question"
+  },
+  {
+   "english": "Time to sleep.",
+   "signs": [
+    "SLEEP"
+   ],
+   "face": "statement"
+  }
+ ]
+}
